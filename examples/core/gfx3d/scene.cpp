@@ -174,7 +174,7 @@ int8_t sin_tab[256];
 constexpr float WAVE1_K = 1.0f / 0.9f, WAVE1_W = 0.55f;
 constexpr float WAVE2_K = 1.0f / 0.37f, WAVE2_W = 0.9f;
 constexpr int WAVE_TEX_AMP = 4;     // 水面のテクスチャ参照をずらす量 [テクセル]
-constexpr int WAVE_SCREEN_AMP = 3;  // 水面下のキューブの像をずらす量 [画面の行]
+constexpr int WAVE_SCREEN_AMP = 8;  // 水面下のキューブの像をずらす量 [画面の行]
 
 int8_t row_wave[BB_H];  // 毎フレームの波の高さ (-127..127)
 
