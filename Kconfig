@@ -1,0 +1,50 @@
+# Options of pdmfrc as an ESP-IDF component (idf.py menuconfig). Each symbol
+# is CONFIG_<macro> of a compile-time option of SPEC.md and is turned into that
+# macro by cmake/esp_idf.cmake.
+menu "pdmfrc"
+
+    config PDMFRC_POS_8BIT
+        bool "8-bit coordinates"
+        default n
+        help
+            Makes pos_t uint8_t. Screens are then limited to 255x255 pixels.
+
+    menu "Input formats"
+
+        config PDMFRC_FORMAT_GRAY8
+            bool "GRAY8"
+            default y
+
+        config PDMFRC_FORMAT_RGB565
+            bool "RGB565 (native byte order)"
+            default y
+
+        config PDMFRC_FORMAT_RGB565_SWAPPED
+            bool "RGB565_SWAPPED (display byte order)"
+            default y
+
+    endmenu
+
+    config PDMFRC_LUT565_R_BITS
+        int "RGB565 LUT: bits of R"
+        range 1 5
+        default 4
+
+    config PDMFRC_LUT565_G_BITS
+        int "RGB565 LUT: bits of G"
+        range 1 6
+        default 5
+
+    config PDMFRC_LUT565_B_BITS
+        int "RGB565 LUT: bits of B"
+        range 1 5
+        default 4
+        help
+            The RGB565 LUT has 2^(R + G + B) entries of 1 byte (8 KB with
+            the defaults).
+
+    config PDMFRC_HOT_IN_IRAM
+        bool "Place the inner loops of push/pop in IRAM"
+        default n
+
+endmenu

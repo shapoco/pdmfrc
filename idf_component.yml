@@ -1,0 +1,24 @@
+# pdmfrc as an ESP-IDF component (see cmake/esp_idf.cmake and Kconfig).
+# Keep "version" in sync with include/pdmfrc/version.hpp and library.json.
+version: "0.1.0"
+description: >-
+  Temporal dithering for monochrome LCDs: blinks the pixels with pulse density
+  modulation so that the slow response of the liquid crystal shows
+  intermediate tones and pseudo colors. No dynamic memory.
+url: https://github.com/shapoco/pdmfrc
+repository: https://github.com/shapoco/pdmfrc.git
+license: MIT
+tags:
+  - lcd
+  - display
+  - dithering
+  - monochrome
+dependencies:
+  idf: ">=5.0"
+files:
+  exclude:
+    - "assets/**/*"
+    - "examples/**/*"
+    - "test/**/*"
+    - "tools/**/*"
+    - "build/**/*"

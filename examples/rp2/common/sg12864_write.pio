@@ -1,0 +1,46 @@
+; SG12864 (KS0108) 書き込みサイクル生成
+;
+; OUT ピン: GPIO2..14 (13 本) = D/I, R/W, E, D0-D7, CS1, CS2
+; side-set: GPIO4 (E)
+; 1 ワード (32bit):
+;   bit 0..12  書き込み時のピン値 (D/I, R/W=0, E=0, D0-D7, CS1, CS2)
+;   bit 16..28 Status Read 時のピン値 (D/I=0, R/W=1, E=0, CS は書き込み時と同じ)
+; 「バスサイクル」= 24 PIO クロック (セットアップ 4, E High 10, E Low 10)。
+
+; 固定サイクル (Busy 待ちなし)。autopull 32bit。
+.program sg12864_fixed
+.side_set 1
+
+.wrap_target
+    out pins, 13            side 0 [3]  ; D/I, CS, データ確定 (E=Low)
+    nop                     side 1 [9]  ; E High
+    out null, 19            side 0 [9]  ; E Low, 残りビット破棄
+.wrap
+
+; Busy 待ちあり。書き込みの前に Status Read を行い、D7 (Busy) が 0 になるまで繰り返す。
+; autopull なし。JMP ピン = D7。
+; Y = Status Read 中の pindirs (D0-D7 のみ入力)。初期化時に CPU が設定する。
+; RP2040 には mov pindirs が無いため OSR 経由で out pindirs する。
+.program sg12864_busy
+.side_set 1
+
+.wrap_target
+    pull block              side 0
+    mov x, osr              side 0      ; X = 書き込み時のピン値 (下位 13bit)
+    out null, 16            side 0
+    mov isr, osr            side 0      ; ISR = Status Read 時のピン値
+    mov osr, y              side 0
+    out pindirs, 13         side 0      ; D0-D7 を入力に
+poll:
+    mov pins, isr           side 0 [3]  ; D/I=0, R/W=1, CS (セットアップ)
+    nop                     side 1 [9]  ; E High, データ確定待ち
+    jmp pin poll_busy       side 1      ; D7=1 なら Busy
+    nop                     side 0 [9]  ; E Low
+    mov pins, x             side 0      ; R/W=0, D/I, CS, データ
+    mov osr, ~null          side 0
+    out pindirs, 13         side 0 [1]  ; D0-D7 を出力に
+    nop                     side 1 [9]  ; E High
+    nop                     side 0 [9]  ; E Low
+.wrap
+poll_busy:
+    jmp poll                side 0 [9]  ; E Low → 再ポーリング

@@ -1,0 +1,46 @@
+{
+  "name": "pdmfrc",
+  "version": "0.1.0",
+  "description": "Temporal dithering for monochrome LCDs: blinks the pixels with pulse density modulation so that the slow response of the liquid crystal shows intermediate tones and pseudo colors. Converts GRAY8 / RGB565 images through a palette LUT and outputs packed 1-bit frames. No dynamic memory, no platform dependencies.",
+  "keywords": [
+    "lcd",
+    "monochrome",
+    "dithering",
+    "pdm",
+    "grayscale",
+    "pseudo-color",
+    "ks0108",
+    "display"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shapoco/pdmfrc.git"
+  },
+  "authors": [
+    {
+      "name": "Shapoco",
+      "url": "https://github.com/shapoco",
+      "maintainer": true
+    }
+  ],
+  "license": "MIT",
+  "frameworks": "*",
+  "platforms": "*",
+  "headers": [
+    "pdmfrc/pdmfrc.hpp"
+  ],
+  "build": {
+    "includeDir": "include",
+    "srcDir": "src"
+  },
+  "export": {
+    "exclude": [
+      ".gitignore",
+      "assets",
+      "examples",
+      "test",
+      "tools",
+      "cmake"
+    ]
+  }
+}
