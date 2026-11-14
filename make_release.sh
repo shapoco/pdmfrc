@@ -17,8 +17,8 @@ function build_rp2 {
   pushd "examples/rp2/${target}" > /dev/null
     echo "Building ${target} for ${board}"
     ./build.sh "${board}" > "build.log" 2>&1
-    mkdir -p "${dest_dir}/rp2/${board}/${target}"
-    cp build/${board}/${target}.uf2 "${dest_dir}/rp2/${board}/${target}/"
+    mkdir -p "${dest_dir}/rp2/${target}/${board}"
+    cp build/${board}/${target}.uf2 "${dest_dir}/rp2/${target}/${board}/"
   popd > /dev/null
 }
 
