@@ -14,6 +14,8 @@ LCD への書き込みは PIO + DMA で行います。`Pdm::pop()` が出力し�
 
 ## 接続
 
+![](../../image/conn_rp2_tg12864b.png)
+
 | Pico | TG12864B | 備考 |
 |---|---|---|
 | GPIO2 | D/I (RS) | |

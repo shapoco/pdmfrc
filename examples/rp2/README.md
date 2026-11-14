@@ -17,6 +17,8 @@ sent at a fixed rate (103 fps for the TG12864B).
 
 ## Wiring
 
+![](../../image/conn_rp2_tg12864b.png)
+
 | Pico | TG12864B | Notes |
 |---|---|---|
 | GPIO2 | D/I (RS) | |
