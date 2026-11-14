@@ -31,6 +31,7 @@ build_rp2 gfx3d pico2
 
 cp README.md "${dest_dir}/"
 cp LICENSE "${dest_dir}/"
+cp image/wiring_rp2_tg12864b.png "${dest_dir}/rp2/"
 
 pushd releases > /dev/null
   zip -r "${release_name}.zip" "${release_name}"
