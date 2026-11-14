@@ -47,6 +47,14 @@ sent at a fixed rate (103 fps for the TG12864B).
   LCD drives DB0..DB7 during status reads. If the module runs at 5 V, use a
   level shifter, or switch to fixed cycle mode (`w` key) and tie R/W to GND.
 
+## Prebuilt binaries
+
+Prebuilt binaries can be downloaded from the
+[Releases](https://github.com/shapoco/pdmfrc/releases) page. The zip file
+holds `rp2/<board>/<example>/<example>.uf2` (`pico`: RP2040, `pico2`: RP2350).
+Hold BOOTSEL while connecting the Pico, then copy the `.uf2` to the drive that
+appears.
+
 ## Build
 
 Requirements: [Pico SDK](https://github.com/raspberrypi/pico-sdk) (2.x for

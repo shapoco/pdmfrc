@@ -38,6 +38,10 @@ LCD への書き込みは PIO + DMA で行います。`Pdm::pop()` が出力し�
 - VDD、コントラスト電圧 (VO / VEE)、バックライトは、LCD モジュールのデータシートに従って供給してください。
 - モジュールのロジック電圧を確認してください。既定の Busy 待ちモードでは、ステータス読み出しの間 LCD が DB0..DB7 を駆動します。5 V で動くモジュールの場合は、レベルシフタを入れてください。または、固定サイクルモード (`w` キー) に切り替え、R/W を GND に固定してください。
 
+## ビルド済みバイナリ
+
+ビルド済みバイナリは [Releases](https://github.com/shapoco/pdmfrc/releases) ページからダウンロードできます。zip ファイルの中の `rp2/<board>/<サンプル名>/<サンプル名>.uf2` が書き込むファイルです (`pico`: RP2040、`pico2`: RP2350)。BOOTSEL ボタンを押しながら Pico を接続し、現れたドライブに `.uf2` をコピーしてください。
+
 ## ビルド
 
 必要なもの: [Pico SDK](https://github.com/raspberrypi/pico-sdk) (RP2350 には 2.x が必要)、CMake、Ninja、Arm GNU ツールチェイン

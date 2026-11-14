@@ -120,15 +120,12 @@ Options (cache variables):
 | [image](examples/core/image) | A still image through the palette LUT |
 | [gfx3d](examples/core/gfx3d) | Real-time 3D: a metal cube over wavy water (requires [ShapoGFX](https://github.com/shapoco/shapo-gfx)) |
 
-`examples/core/` holds the platform-independent parts. `examples/rp2/` holds the
-builds for the Raspberry Pi Pico (RP2040) and Pico 2 (RP2350) with a TG12864B:
+`examples/core/` holds the platform-independent parts. See
+[examples/rp2/README.md](examples/rp2/README.md) for the Raspberry Pi Pico
+(RP2040 / RP2350) builds and wiring details.
 
-```sh
-export PICO_SDK_PATH=...
-export SHAPOGFX_PATH=...   # gfx3d only
-examples/rp2/image/build.sh          # RP2040
-examples/rp2/image/build.sh pico2    # RP2350
-```
+Prebuilt binaries (`.uf2`) of the RP2 examples can be downloaded from the
+[Releases](https://github.com/shapoco/pdmfrc/releases) page.
 
 ## Tools
 
