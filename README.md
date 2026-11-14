@@ -4,6 +4,8 @@ Temporal Dithering Using Pulse Density Modulation
 
 [日本語](README.ja.md)
 
+![](./image/cover.jpg)
+
 pdmfrc shows intermediate tones and pseudo colors on a monochrome LCD. It
 blinks each pixel quickly with first-order delta-sigma modulation (PDM). The
 liquid crystal responds slowly, so the eye sees the average. On an STN panel

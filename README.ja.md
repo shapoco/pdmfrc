@@ -4,6 +4,8 @@ Temporal Dithering Using Pulse Density Modulation
 
 [English](README.md)
 
+![](./image/cover.jpg)
+
 pdmfrc は、モノクロ液晶で中間調や擬似カラーを表示するライブラリです。
 
 - 各画素を 1 次 ΔΣ 変調 (PDM) で高速に点滅させます。液晶の応答は遅いので、目には平均が見えます。
