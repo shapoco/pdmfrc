@@ -420,7 +420,7 @@ static const LcdModule TG12864B = {
   - ESP-IDF (`ESP_PLATFORM`) では `cmake/esp_idf.cmake` で `idf_component_register()` する。
   - それ以外では静的ライブラリ `pdmfrc` (公開インクルード `include/`, C++11 以上)。
   - キャッシュ変数 `PDMFRC_POS_8BIT` (PUBLIC)、`PDMFRC_LUT565_{R,G,B}_BITS`, `PDMFRC_FORMAT_*`, `PDMFRC_HOT_ATTR` (PRIVATE) をマクロ定義として渡す。
-- `library.json` (PlatformIO): 名前 `pdmfrc`、バージョン 0.1.0、MIT、作者 Shapoco、`frameworks: *`, `platforms: *`。
+- `library.json` (PlatformIO): 名前 `pdmfrc`、バージョン 1.0.0、MIT、作者 Shapoco、`frameworks: *`, `platforms: *`。
   `examples/rp2` と `tools` はパッケージから除外する。
 - `idf_component.yml`: バージョン、説明、MIT、`url: https://github.com/shapoco/pdmfrc`。
 - `Kconfig`: `PDMFRC_POS_8BIT`, `PDMFRC_FORMAT_*`, `PDMFRC_HOT_IN_IRAM` (bool), `PDMFRC_LUT565_{R,G,B}_BITS` (int)。

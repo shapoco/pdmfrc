@@ -1,6 +1,6 @@
 # pdmfrc as an ESP-IDF component (see cmake/esp_idf.cmake and Kconfig).
 # Keep "version" in sync with include/pdmfrc/version.hpp and library.json.
-version: "0.1.0"
+version: "1.0.0"
 description: >-
   Temporal dithering for monochrome LCDs: blinks the pixels with pulse density
   modulation so that the slow response of the liquid crystal shows
