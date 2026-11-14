@@ -10,7 +10,7 @@ python3 - "$out" <<'EOF'
 import sys
 sys.path.insert(0, "tools")
 import colorlib
-pal = colorlib.load_palette("assets/palettes/sg12864.png")
+pal = colorlib.load_palette("assets/palettes/tg12864b.png")
 open(sys.argv[1] + "/lut565.bin", "wb").write(colorlib.Lut565(pal).table.tobytes())
 open(sys.argv[1] + "/lutgray8.bin", "wb").write(colorlib.lut_gray8(pal).tobytes())
 EOF

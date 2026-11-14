@@ -25,14 +25,14 @@ pdmfrc/
 ├── include/pdmfrc/
 │   ├── pdmfrc.hpp               # 公開ヘッダ (これだけインクルードすればよい)
 │   ├── version.hpp
-│   ├── palettes/sg12864.hpp    # assets/palettes/sg12864.png から生成したパレット
-│   └── configs/sg12864.hpp     # SG12864 の推奨設定 (LcdModule)
+│   ├── palettes/tg12864b.hpp    # assets/palettes/tg12864b.png から生成したパレット
+│   └── configs/tg12864b.hpp     # TG12864B の推奨設定 (LcdModule)
 ├── src/                        # ライブラリ実装 (アーキテクチャ非依存)
 ├── cmake/esp_idf.cmake         # ESP-IDF コンポーネントとしての登録
 ├── test/                       # ホスト用テスト (run.sh)
 ├── assets/
-│   ├── palettes/sg12864.png    # 256x1 px パレット画像
-│   └── images/sg12864.png      # image サンプル用の 128x64 画像
+│   ├── palettes/tg12864b.png    # 256x1 px パレット画像
+│   └── images/tg12864b.png      # image サンプル用の 128x64 画像
 ├── tools/                      # Python スクリプト (要 Python3 + Pillow + NumPy)
 ├── examples/
 │   ├── core/                   # サンプルのアーキテクチャ非依存部分
@@ -40,7 +40,7 @@ pdmfrc/
 │   │   ├── image/
 │   │   └── gfx3d/              # ShapoGFX に依存 (このディレクトリのみ)
 │   └── rp2/                    # RP2040 / RP2350 向けビルド環境
-│       ├── common/             # SG12864 ドライバ・HAL
+│       ├── common/             # TG12864B ドライバ・HAL
 │       ├── gradient/
 │       ├── image/
 │       └── gfx3d/
@@ -134,7 +134,7 @@ struct Config {
 // デバイスごとの推奨設定
 struct LcdModule {
   Config config;                // Config の推奨値
-  uint32_t fpsQ8;               // 推奨フレームレート (小数部 8bit の固定小数点。SG12864 では 103 << 8)
+  uint32_t fpsQ8;               // 推奨フレームレート (小数部 8bit の固定小数点。TG12864B では 103 << 8)
   const uint8_t (*palette)[3];  // パレット (256 色, RGB888)
 };
 
@@ -265,7 +265,7 @@ class Pdm {
   生成した LUT を `setLut()` で使う。
 - 作業領域としてパレットの OKLab 値 (int16 × 3 × 256 = 1.5KB) をスタックに置く。
 - `tools/mklut.py` (倍精度浮動小数点) とは、入力から等距離に近い 2 色の選び方だけが異なる
-  (SG12864 のパレットで RGB565 LUT の約 1 割、距離の差は最大 0.00013)。
+  (TG12864B のパレットで RGB565 LUT の約 1 割、距離の差は最大 0.00013)。
 
 ### 3.9 PDM (pop)
 
@@ -316,25 +316,25 @@ a = s & 0xFF
 
 ## 4. パレット・推奨設定ヘッダ
 
-### `include/pdmfrc/palettes/sg12864.hpp`
+### `include/pdmfrc/palettes/tg12864b.hpp`
 
-`tools/pal2cpp.py` で `assets/palettes/sg12864.png` から生成する (生成物もリポジトリに含め、利用者は Python 不要)。
+`tools/pal2cpp.py` で `assets/palettes/tg12864b.png` から生成する (生成物もリポジトリに含め、利用者は Python 不要)。
 
 ```cpp
 namespace pdmfrc { namespace palettes {
-static const uint8_t SG12864[256][3] = { {78, 32, 255}, ... };
+static const uint8_t TG12864B[256][3] = { {78, 32, 255}, ... };
 }}
 ```
 
-### `include/pdmfrc/configs/sg12864.hpp`
+### `include/pdmfrc/configs/tg12864b.hpp`
 
 ```cpp
-#include "pdmfrc/palettes/sg12864.hpp"
+#include "pdmfrc/palettes/tg12864b.hpp"
 namespace pdmfrc { namespace configs {
-static const LcdModule SG12864 = {
+static const LcdModule TG12864B = {
   {128, 64, PixelFormat::RGB565_SWAPPED, CFG_FLAG_PACK_V8 | CFG_FLAG_LSB1ST | CFG_FLAG_USE_LUT},
   103 << 8,
-  palettes::SG12864,
+  palettes::TG12864B,
 };
 }}
 ```
@@ -357,7 +357,7 @@ static const LcdModule SG12864 = {
 
 - `examples/core/<name>/`: アーキテクチャ非依存の部分 (画像の生成、3D シーンの描画など)。HAL には依存しない。
 - `examples/rp2/common/`: RP2040 / RP2350 共通の HAL。
-  - `sg12864.*`, `sg12864_write.pio`: SG12864 ドライバ (GPIO 初期化, PIO + DMA 転送, Busy 待ち / 固定サイクル)。
+  - `tg12864b.*`, `tg12864b_write.pio`: TG12864B ドライバ (GPIO 初期化, PIO + DMA 転送, Busy 待ち / 固定サイクル)。
     `fillStream()` で pop の出力 (縦パック, LSB が上) を転送ストリームに詰める。
   - `app.*`: クロック設定 (133MHz 超でコア電圧 1.20V)、フレームループ、USB シリアルの共通操作。
     サンプル固有の処理は `app::Hooks` (キー処理、pop 直後の処理、ステータス、ヘルプ) で差し込む。
@@ -389,13 +389,13 @@ static const LcdModule SG12864 = {
 ### 6.2 gradient
 
 - 左から右へ階調値 0 → 255 に変化するグラデーションを起動時に GRAY8 で生成し、LUT なしで push する
-  (Config は SG12864 の推奨値から入力形式を GRAY8 にし、`CFG_FLAG_USE_LUT` を外したもの)。
+  (Config は TG12864B の推奨値から入力形式を GRAY8 にし、`CFG_FLAG_USE_LUT` を外したもの)。
 - 新しいディスプレイの発色を撮影してパレットを作るために使う。
 - 操作は共通操作のみ (現行の PWM / 階調数 / ガンマ / 反転 / パターン切替は削除)。
 
 ### 6.3 image
 
-- `assets/images/sg12864.png` をビルド時に `tools/img2cpp.py` で RGB565_SWAPPED のヘッダ (`image_data.hpp`) に変換し、
+- `assets/images/tg12864b.png` をビルド時に `tools/img2cpp.py` で RGB565_SWAPPED のヘッダ (`image_data.hpp`) に変換し、
   LUT を通して表示する (`examples/core/image/image.cmake`)。
 - タイトル画面は削除。ShapoGFX に依存しない。
 - 操作: `g` で LUT 変換とグレースケール変換 (`PUSH_FLAG_USE_LUT` なし) を切り替えて見比べる。

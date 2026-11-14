@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-Raspberry Pi Pico (RP2040) または Pico 2 (RP2350) で SG12864 (128x64、KS0108 互換) を駆動するサンプルです。アプリケーション側のコードは [`examples/core/`](../core) にあります。
+Raspberry Pi Pico (RP2040) または Pico 2 (RP2350) で TG12864B (128x64、KS0108 互換) を駆動するサンプルです。アプリケーション側のコードは [`examples/core/`](../core) にあります。
 
 | ディレクトリ | 内容 | システムクロック |
 |---|---|---|
@@ -10,11 +10,11 @@ Raspberry Pi Pico (RP2040) または Pico 2 (RP2350) で SG12864 (128x64、KS010
 | [image](image) | パレット LUT を通した静止画 | 125 MHz |
 | [gfx3d](gfx3d) | 波打つ水面に浮かぶ金属キューブのリアルタイム 3D ([ShapoGFX](https://github.com/shapoco/shapo-gfx) が必要) | 250 MHz |
 
-LCD への書き込みは PIO + DMA で行います。`Pdm::pop()` が出力したビットマップを、毎フレーム一定のレートで送ります。SG12864 では 103 fps です。
+LCD への書き込みは PIO + DMA で行います。`Pdm::pop()` が出力したビットマップを、毎フレーム一定のレートで送ります。TG12864B では 103 fps です。
 
 ## 接続
 
-| Pico | SG12864 | 備考 |
+| Pico | TG12864B | 備考 |
 |---|---|---|
 | GPIO2 | D/I (RS) | |
 | GPIO3 | R/W | PIO が駆動するのは Busy 待ちモードのときだけです。固定サイクルモードでは Low 固定です。 |
@@ -32,7 +32,7 @@ LCD への書き込みは PIO + DMA で行います。`Pdm::pop()` が出力し�
 | GPIO15 | /RST | アクティブ Low |
 | GND | VSS | |
 
-- PIO は GPIO2..14 を連続した 1 ブロックとして使います。そのため、ピンを 1 本ずつ入れ替えることはできません。変更する場合は、[common/sg12864.cpp](common/sg12864.cpp) の `PIN_*` と [common/sg12864.hpp](common/sg12864.hpp) のビット配置 (`BIT_*`) を合わせて書き換えてください。
+- PIO は GPIO2..14 を連続した 1 ブロックとして使います。そのため、ピンを 1 本ずつ入れ替えることはできません。変更する場合は、[common/tg12864b.cpp](common/tg12864b.cpp) の `PIN_*` と [common/tg12864b.hpp](common/tg12864b.hpp) のビット配置 (`BIT_*`) を合わせて書き換えてください。
 - VDD、コントラスト電圧 (VO / VEE)、バックライトは、LCD モジュールのデータシートに従って供給してください。
 - モジュールのロジック電圧を確認してください。既定の Busy 待ちモードでは、ステータス読み出しの間 LCD が DB0..DB7 を駆動します。5 V で動くモジュールの場合は、レベルシフタを入れてください。または、固定サイクルモード (`w` キー) に切り替え、R/W を GND に固定してください。
 

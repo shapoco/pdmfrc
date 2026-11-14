@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include "app.hpp"
 #include "gradient.hpp"
-#include "pdmfrc/configs/sg12864.hpp"
+#include "pdmfrc/configs/tg12864b.hpp"
 
 #ifndef SYS_CLOCK_KHZ
 #define SYS_CLOCK_KHZ 125000
@@ -10,7 +10,7 @@
 
 namespace {
 
-const pdmfrc::LcdModule& MODULE = pdmfrc::configs::SG12864;
+const pdmfrc::LcdModule& MODULE = pdmfrc::configs::TG12864B;
 pdmfrc::Pdm pdm;
 alignas(4) uint8_t arena[128 * 64 * 2];
 uint8_t image[128 * 64];

@@ -1,4 +1,4 @@
-#include "sg12864.hpp"
+#include "tg12864b.hpp"
 
 #include <initializer_list>
 
@@ -8,9 +8,9 @@
 #include "hardware/irq.h"
 #include "hardware/pio.h"
 #include "pico/stdlib.h"
-#include "sg12864_write.pio.h"
+#include "tg12864b_write.pio.h"
 
-namespace sg12864 {
+namespace tg12864b {
 namespace {
 
 constexpr uint PIN_DI = 2;
@@ -123,11 +123,11 @@ void start_sm() {
     uint offset;
     if (cur_mode == WaitMode::FIXED) {
         offset = offset_fixed;
-        c = sg12864_fixed_program_get_default_config(offset);
+        c = tg12864b_fixed_program_get_default_config(offset);
         sm_config_set_out_shift(&c, true, true, 32);  // 右シフト, autopull 32bit
     } else {
         offset = offset_busy;
-        c = sg12864_busy_program_get_default_config(offset);
+        c = tg12864b_busy_program_get_default_config(offset);
         sm_config_set_out_shift(&c, true, false, 32);  // 右シフト, autopull なし
         sm_config_set_jmp_pin(&c, PIN_D0 + 7);         // D7 = Busy
     }
@@ -155,8 +155,8 @@ void start_sm() {
 
 void init_pio_dma() {
     sm = pio_claim_unused_sm(pio, true);
-    offset_fixed = pio_add_program(pio, &sg12864_fixed_program);
-    offset_busy = pio_add_program(pio, &sg12864_busy_program);
+    offset_fixed = pio_add_program(pio, &tg12864b_fixed_program);
+    offset_busy = pio_add_program(pio, &tg12864b_busy_program);
 
     for (uint pin = PIO_PIN_BASE; pin < PIO_PIN_BASE + PIO_PIN_COUNT; ++pin) {
         if (pin == PIN_RW) continue;  // R/W は Busy 待ちモードのみ PIO が駆動
@@ -261,4 +261,4 @@ void setWaitMode(WaitMode mode) {
 
 WaitMode waitMode() { return cur_mode; }
 
-}  // namespace sg12864
+}  // namespace tg12864b

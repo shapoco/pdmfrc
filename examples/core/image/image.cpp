@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "image.hpp"
 
-// Generated at build time by tools/img2cpp.py from assets/images/sg12864.png
+// Generated at build time by tools/img2cpp.py from assets/images/tg12864b.png
 #include "image_data.hpp"
 
 namespace image {

@@ -6,7 +6,7 @@ writes a PNG of three panels side by side: the input (RGB565), through the
 LUT, and through the gray conversion (PUSH_FLAG_USE_LUT off) for comparison.
 
 Example:
-  tools/preview.py assets/images/sg12864.png assets/palettes/sg12864.png preview.png
+  tools/preview.py assets/images/tg12864b.png assets/palettes/tg12864b.png preview.png
 """
 
 import argparse

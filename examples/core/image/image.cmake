@@ -2,7 +2,7 @@
 #   include(<pdmfrc>/examples/core/image/image.cmake)
 #   pdmfrc_example_image(<target>)
 set(PDMFRC_EXAMPLE_IMAGE_DIR ${CMAKE_CURRENT_LIST_DIR})
-set(PDMFRC_EXAMPLE_IMAGE_PNG ${CMAKE_CURRENT_LIST_DIR}/../../../assets/images/sg12864.png
+set(PDMFRC_EXAMPLE_IMAGE_PNG ${CMAKE_CURRENT_LIST_DIR}/../../../assets/images/tg12864b.png
     CACHE FILEPATH "Image of the image example")
 
 function(pdmfrc_example_image target)

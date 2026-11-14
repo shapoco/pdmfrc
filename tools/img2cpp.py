@@ -6,7 +6,7 @@
   rgb565_swapped  uint16_t, byte-swapped (RRRRRGGG, GGGBBBBB in memory)
 
 Example:
-  tools/img2cpp.py assets/images/sg12864.png image.hpp --format rgb565_swapped --name IMAGE
+  tools/img2cpp.py assets/images/tg12864b.png image.hpp --format rgb565_swapped --name IMAGE
 """
 
 import argparse

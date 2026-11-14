@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "pdmfrc/configs/sg12864.hpp"
+#include "pdmfrc/configs/tg12864b.hpp"
 #include "pdmfrc/pdmfrc.hpp"
 
 using namespace pdmfrc;
@@ -267,7 +267,7 @@ void testErrors() {
   uint8_t img[64 * 64] = {};
   CHECK(!pdm.push(img, 0, 10, 0, 11, 1));                   // outside
   CHECK(!pdm.push(img, 0, 0, 0, 1, 1, PUSH_FLAG_USE_LUT));  // no LUT
-  CHECK(!pdm.initLut(configs::SG12864.palette));            // no CFG_FLAG_USE_LUT
+  CHECK(!pdm.initLut(configs::TG12864B.palette));            // no CFG_FLAG_USE_LUT
   uint8_t out[64];
   CHECK(!pdm.pop(out, 0, 0, 4, 20, 8));     // sy not a multiple of 8
   CHECK(!pdm.pop(out, 0, 0, 0, 20, 8, 1));  // flags
@@ -327,9 +327,9 @@ void testLutFiles(const char* lut565Path, const char* lutGrayPath) {
     std::vector<uint32_t> arena(calcRequiredArenaSize(cfg) / 4 + 1);
     Pdm pdm;
     CHECK(pdm.init(cfg, (uint8_t*)arena.data(), arena.size() * 4));
-    CHECK(pdm.initLut(configs::SG12864.palette));
+    CHECK(pdm.initLut(configs::TG12864B.palette));
     // Where the levels differ, both must be (almost) equally near to the input
-    const uint8_t(*pal)[3] = configs::SG12864.palette;
+    const uint8_t(*pal)[3] = configs::TG12864B.palette;
     int diff = 0;
     double worst = 0;
     for (size_t i = 0; i < want.size(); ++i) {

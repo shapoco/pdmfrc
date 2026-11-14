@@ -4,7 +4,7 @@
 
 #include "app.hpp"
 #include "image.hpp"
-#include "pdmfrc/configs/sg12864.hpp"
+#include "pdmfrc/configs/tg12864b.hpp"
 #include "pico/stdlib.h"
 
 #ifndef SYS_CLOCK_KHZ
@@ -13,7 +13,7 @@
 
 namespace {
 
-const pdmfrc::LcdModule& MODULE = pdmfrc::configs::SG12864;
+const pdmfrc::LcdModule& MODULE = pdmfrc::configs::TG12864B;
 pdmfrc::Pdm pdm;
 alignas(4) uint8_t arena[128 * 64 * 2 + 8192];  // planes + RGB565 LUT (R4G5B4)
 

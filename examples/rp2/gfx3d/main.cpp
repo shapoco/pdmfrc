@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #include "app.hpp"
-#include "pdmfrc/configs/sg12864.hpp"
+#include "pdmfrc/configs/tg12864b.hpp"
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
 #include "scene.hpp"
@@ -17,7 +17,7 @@ namespace {
 
 using namespace pdmfrc;
 
-const LcdModule& MODULE = configs::SG12864;
+const LcdModule& MODULE = configs::TG12864B;
 Pdm pdm;
 alignas(4) uint8_t arena[128 * 64 * 2 + 8192];  // planes + RGB565 LUT (R4G5B4)
 
@@ -181,7 +181,7 @@ bool on_key(int c) {
 }  // namespace
 
 int main() {
-  // The PIO clock divider follows the system clock at sg12864 init: set it first
+  // The PIO clock divider follows the system clock at tg12864b init: set it first
   app::setClock(SYS_CLOCK_KHZ);
   if (calcRequiredArenaSize(MODULE.config) > sizeof(arena)) panic("arena");
   pdm.init(MODULE.config, arena, sizeof(arena));

@@ -9,7 +9,7 @@ The algorithm is that of Pdm::initLut() but in floating point, so a color
 almost equidistant from two palette entries may rarely map to another level.
 
 Example:
-  tools/mklut.py assets/palettes/sg12864.png lut.hpp --format rgb565 --name SG12864_LUT565
+  tools/mklut.py assets/palettes/tg12864b.png lut.hpp --format rgb565 --name TG12864B_LUT565
 """
 
 import argparse

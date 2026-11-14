@@ -6,7 +6,7 @@ duty x / 255 (level x). Measure it on each display, e.g. by photographing the
 gradient example.
 
 Example:
-  tools/pal2cpp.py assets/palettes/sg12864.png include/pdmfrc/palettes/sg12864.hpp --name SG12864
+  tools/pal2cpp.py assets/palettes/tg12864b.png include/pdmfrc/palettes/tg12864b.hpp --name TG12864B
 """
 
 import argparse

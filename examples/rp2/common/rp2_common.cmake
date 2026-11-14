@@ -14,10 +14,10 @@ add_subdirectory(${PDMFRC_ROOT} pdmfrc)
 
 function(pdmfrc_rp2_example target)
     target_sources(${target} PRIVATE
-        ${PDMFRC_RP2_COMMON_DIR}/sg12864.cpp
+        ${PDMFRC_RP2_COMMON_DIR}/tg12864b.cpp
         ${PDMFRC_RP2_COMMON_DIR}/app.cpp
     )
-    pico_generate_pio_header(${target} ${PDMFRC_RP2_COMMON_DIR}/sg12864_write.pio)
+    pico_generate_pio_header(${target} ${PDMFRC_RP2_COMMON_DIR}/tg12864b_write.pio)
     target_include_directories(${target} PRIVATE ${PDMFRC_RP2_COMMON_DIR})
     target_link_libraries(${target} pdmfrc pico_stdlib hardware_pio hardware_dma hardware_vreg)
     target_compile_definitions(${target} PRIVATE SYS_CLOCK_KHZ=${SYS_CLOCK_KHZ})

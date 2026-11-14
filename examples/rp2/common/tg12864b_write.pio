@@ -1,4 +1,4 @@
-; SG12864 (KS0108) 書き込みサイクル生成
+; TG12864B (KS0108) 書き込みサイクル生成
 ;
 ; OUT ピン: GPIO2..14 (13 本) = D/I, R/W, E, D0-D7, CS1, CS2
 ; side-set: GPIO4 (E)
@@ -8,7 +8,7 @@
 ; 「バスサイクル」= 24 PIO クロック (セットアップ 4, E High 10, E Low 10)。
 
 ; 固定サイクル (Busy 待ちなし)。autopull 32bit。
-.program sg12864_fixed
+.program tg12864b_fixed
 .side_set 1
 
 .wrap_target
@@ -21,7 +21,7 @@
 ; autopull なし。JMP ピン = D7。
 ; Y = Status Read 中の pindirs (D0-D7 のみ入力)。初期化時に CPU が設定する。
 ; RP2040 には mov pindirs が無いため OSR 経由で out pindirs する。
-.program sg12864_busy
+.program tg12864b_busy
 .side_set 1
 
 .wrap_target

@@ -6,7 +6,7 @@
 #include "hardware/clocks.h"
 #include "hardware/vreg.h"
 #include "pico/stdlib.h"
-#include "sg12864.hpp"
+#include "tg12864b.hpp"
 
 namespace app {
 namespace {
@@ -22,8 +22,8 @@ uint32_t fps_q8 = 103u << 8;
 pdmfrc::Phase phase = pdmfrc::Phase::RANDOM;
 const Hooks* hooks = nullptr;
 
-uint32_t streams[2][sg12864::STREAM_LEN];
-uint8_t pages[sg12864::WIDTH * sg12864::PAGES];
+uint32_t streams[2][tg12864b::STREAM_LEN];
+uint8_t pages[tg12864b::WIDTH * tg12864b::PAGES];
 
 uint32_t stat_frames = 0;
 uint64_t stat_pop_sum = 0;
@@ -95,15 +95,15 @@ bool handle_key(int c) {
       resetPhase();
       break;
     case 'b':
-      sg12864::setBusCycleNs(step_bus_cycle(sg12864::busCycleNs(), false));
+      tg12864b::setBusCycleNs(step_bus_cycle(tg12864b::busCycleNs(), false));
       break;
     case 'B':
-      sg12864::setBusCycleNs(step_bus_cycle(sg12864::busCycleNs(), true));
+      tg12864b::setBusCycleNs(step_bus_cycle(tg12864b::busCycleNs(), true));
       break;
     case 'w':
-      sg12864::setWaitMode(sg12864::waitMode() == sg12864::WaitMode::BUSY
-                               ? sg12864::WaitMode::FIXED
-                               : sg12864::WaitMode::BUSY);
+      tg12864b::setWaitMode(tg12864b::waitMode() == tg12864b::WaitMode::BUSY
+                               ? tg12864b::WaitMode::FIXED
+                               : tg12864b::WaitMode::BUSY);
       break;
     case 's':
       printStatus();
@@ -124,7 +124,7 @@ bool handle_key(int c) {
 
 void pop_to(uint32_t* stream) {
   pdm->pop(pages);
-  sg12864::fillStream(stream, pages);
+  tg12864b::fillStream(stream, pages);
 }
 
 }  // namespace
@@ -139,9 +139,9 @@ void setClock(uint32_t khz) {
 
 void init(pdmfrc::Pdm& p, const pdmfrc::LcdModule& module) {
   stdio_init_all();
-  sg12864::init();
-  sg12864::initStream(streams[0]);
-  sg12864::initStream(streams[1]);
+  tg12864b::init();
+  tg12864b::initStream(streams[0]);
+  tg12864b::initStream(streams[1]);
   pdm = &p;
   fps_q8 = module.fpsQ8;
 }
@@ -164,12 +164,12 @@ void printStatus() {
   printf("clk=%luMHz fps=%lu.%02lu phase=%s bus=%luns %s\n",
          (unsigned long)(clock_get_hz(clk_sys) / 1000000), (unsigned long)(fps_q8 >> 8),
          (unsigned long)((fps_q8 & 255) * 100 / 256), PHASE_NAMES[(int)phase],
-         (unsigned long)sg12864::busCycleNs(),
-         sg12864::waitMode() == sg12864::WaitMode::BUSY ? "busy-wait" : "fixed-cycle");
+         (unsigned long)tg12864b::busCycleNs(),
+         tg12864b::waitMode() == tg12864b::WaitMode::BUSY ? "busy-wait" : "fixed-cycle");
   printf(
       "frame: pop avg=%luus max=%luus xfer=%luus late=%lu/%lu | start delay max=%luus "
       "interval min=%luus max=%luus (nominal %luus)\n",
-      (unsigned long)avg, (unsigned long)stat_pop_max, (unsigned long)sg12864::lastTransferUs(),
+      (unsigned long)avg, (unsigned long)stat_pop_max, (unsigned long)tg12864b::lastTransferUs(),
       (unsigned long)stat_late, (unsigned long)stat_frames, (unsigned long)stat_delay_max,
       (unsigned long)(stat_interval_min == UINT32_MAX ? 0 : stat_interval_min),
       (unsigned long)stat_interval_max, (unsigned long)frame_time_us(1));
@@ -201,7 +201,7 @@ void run(const Hooks& h) {
       n = 0;
     }
 
-    sg12864::startTransfer(streams[buf]);
+    tg12864b::startTransfer(streams[buf]);
     {
       const uint64_t started = time_us_64();
       // Ahead of the target when a key broke the wait: not counted

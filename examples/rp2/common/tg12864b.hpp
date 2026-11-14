@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-namespace sg12864 {
+namespace tg12864b {
 
 inline constexpr int WIDTH = 128;
 inline constexpr int HEIGHT = 64;
@@ -66,4 +66,4 @@ uint32_t busCycleNs();
 void setWaitMode(WaitMode mode);
 WaitMode waitMode();
 
-}  // namespace sg12864
+}  // namespace tg12864b

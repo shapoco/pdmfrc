@@ -1,4 +1,4 @@
-// Frame loop of the RP2040 / RP2350 examples: SG12864 transfer at a regular
+// Frame loop of the RP2040 / RP2350 examples: TG12864B transfer at a regular
 // frame rate, Pdm::pop() and the common serial commands
 // SPDX-License-Identifier: MIT
 #pragma once
@@ -23,7 +23,7 @@ struct Hooks {
 // (the PIO clock divider follows the system clock at that time)
 void setClock(uint32_t khz);
 
-// Initializes stdio, the SG12864 and the frame rate (from the module)
+// Initializes stdio, the TG12864B and the frame rate (from the module)
 void init(pdmfrc::Pdm& pdm, const pdmfrc::LcdModule& module);
 
 // Resets the phase with the current phase mode and a time-based seed

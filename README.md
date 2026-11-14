@@ -38,16 +38,16 @@ image (RGB565) ──LUT──> levels (0..255) ──PDM, every frame──> 1-
   the ON duty x/255 appears to have. It is measured for each display model.
 - The *LUT* maps each RGB565 color to the level whose apparent color is nearest
   in OKLab. It is built from the palette at startup, or built offline.
-- `pop()` must be called at a steady frame rate (103 fps for the SG12864). Jitter
+- `pop()` must be called at a steady frame rate (103 fps for the TG12864B). Jitter
   in the frame timing appears as sand-like noise.
 
 ## Usage
 
 ```cpp
 #include "pdmfrc/pdmfrc.hpp"
-#include "pdmfrc/configs/sg12864.hpp"
+#include "pdmfrc/configs/tg12864b.hpp"
 
-const pdmfrc::LcdModule& lcd = pdmfrc::configs::SG12864;
+const pdmfrc::LcdModule& lcd = pdmfrc::configs::TG12864B;
 alignas(4) uint8_t arena[128 * 64 * 2 + 8192];  // pdmfrc::calcRequiredArenaSize(lcd.config)
 pdmfrc::Pdm pdm;
 
@@ -110,7 +110,7 @@ Options (cache variables):
 
 1. Run the gradient example (levels 0..255 from left to right) on the display, at a fixed frame rate.
 2. Photograph the screen and make a 256x1 px palette image of the apparent colors.
-3. Convert the image into a header with `tools/pal2cpp.py`, and define an `LcdModule` like [include/pdmfrc/configs/sg12864.hpp](include/pdmfrc/configs/sg12864.hpp).
+3. Convert the image into a header with `tools/pal2cpp.py`, and define an `LcdModule` like [include/pdmfrc/configs/tg12864b.hpp](include/pdmfrc/configs/tg12864b.hpp).
 
 ## Examples
 
@@ -121,7 +121,7 @@ Options (cache variables):
 | [gfx3d](examples/core/gfx3d) | Real-time 3D: a metal cube over wavy water (requires [ShapoGFX](https://github.com/shapoco/shapo-gfx)) |
 
 `examples/core/` holds the platform-independent parts. `examples/rp2/` holds the
-builds for the Raspberry Pi Pico (RP2040) and Pico 2 (RP2350) with an SG12864:
+builds for the Raspberry Pi Pico (RP2040) and Pico 2 (RP2350) with a TG12864B:
 
 ```sh
 export PICO_SDK_PATH=...

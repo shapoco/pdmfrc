@@ -2,7 +2,7 @@
 
 [日本語](README.ja.md)
 
-These examples drive an SG12864 (128x64, KS0108 compatible) from a Raspberry Pi
+These examples drive a TG12864B (128x64, KS0108 compatible) from a Raspberry Pi
 Pico (RP2040) or Pico 2 (RP2350). The application-side code is in
 [`examples/core/`](../core).
 
@@ -13,11 +13,11 @@ Pico (RP2040) or Pico 2 (RP2350). The application-side code is in
 | [gfx3d](gfx3d) | Real-time 3D: a metal cube over wavy water (requires [ShapoGFX](https://github.com/shapoco/shapo-gfx)) | 250 MHz |
 
 The LCD is written by PIO + DMA. Every frame, the bitmap from `Pdm::pop()` is
-sent at a fixed rate (103 fps for the SG12864).
+sent at a fixed rate (103 fps for the TG12864B).
 
 ## Wiring
 
-| Pico | SG12864 | Notes |
+| Pico | TG12864B | Notes |
 |---|---|---|
 | GPIO2 | D/I (RS) | |
 | GPIO3 | R/W | Driven by PIO only in busy wait mode; held Low in fixed cycle mode |
@@ -37,8 +37,8 @@ sent at a fixed rate (103 fps for the SG12864).
 
 - The PIO uses GPIO2..14 as one contiguous block, so these pins cannot be moved
   one by one. To change them, edit `PIN_*` in
-  [common/sg12864.cpp](common/sg12864.cpp) and the bit layout (`BIT_*`) in
-  [common/sg12864.hpp](common/sg12864.hpp) together.
+  [common/tg12864b.cpp](common/tg12864b.cpp) and the bit layout (`BIT_*`) in
+  [common/tg12864b.hpp](common/tg12864b.hpp) together.
 - Supply VDD, the contrast voltage (VO / VEE) and the backlight as given in the
   LCD module's datasheet.
 - Check the logic level of your module. In busy wait mode (the default), the

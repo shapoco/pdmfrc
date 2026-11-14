@@ -35,15 +35,15 @@ LCD への転送はアプリ側で行います。
 
 - **パレット**は 256x1 の画像です。x 番目の画素は、ON デューティ x/255 で点滅させた画素の見かけの色です。表示器の機種ごとに実測します。
 - **LUT** は、各 RGB565 色に対して、見かけの色が OKLab で最も近い階調値を引く表です。起動時にパレットから生成するか、事前に生成しておきます。
-- `pop()` は一定のフレームレートで呼んでください (SG12864 では 103fps)。フレームの開始時刻が揺らぐと、砂嵐状のノイズになります。
+- `pop()` は一定のフレームレートで呼んでください (TG12864B では 103fps)。フレームの開始時刻が揺らぐと、砂嵐状のノイズになります。
 
 ## 使い方
 
 ```cpp
 #include "pdmfrc/pdmfrc.hpp"
-#include "pdmfrc/configs/sg12864.hpp"
+#include "pdmfrc/configs/tg12864b.hpp"
 
-const pdmfrc::LcdModule& lcd = pdmfrc::configs::SG12864;
+const pdmfrc::LcdModule& lcd = pdmfrc::configs::TG12864B;
 alignas(4) uint8_t arena[128 * 64 * 2 + 8192];  // pdmfrc::calcRequiredArenaSize(lcd.config)
 pdmfrc::Pdm pdm;
 
@@ -106,7 +106,7 @@ target_link_libraries(your_app pdmfrc)
 1. 表示器で gradient サンプル (左から右へ階調値 0..255) を、一定のフレームレートで表示します。
 2. 画面を撮影し、見かけの色を 256x1 px のパレット画像にします。
 3. `tools/pal2cpp.py` でパレット画像をヘッダに変換します。
-4. [include/pdmfrc/configs/sg12864.hpp](include/pdmfrc/configs/sg12864.hpp) にならって `LcdModule` を定義します。
+4. [include/pdmfrc/configs/tg12864b.hpp](include/pdmfrc/configs/tg12864b.hpp) にならって `LcdModule` を定義します。
 
 ## サンプル
 
@@ -117,7 +117,7 @@ target_link_libraries(your_app pdmfrc)
 | [gfx3d](examples/core/gfx3d) | 波打つ水面に浮かぶ金属キューブのリアルタイム 3D ([ShapoGFX](https://github.com/shapoco/shapo-gfx) が必要) |
 
 - `examples/core/` には、アーキテクチャに依存しない部分を置いています。
-- `examples/rp2/` には、Raspberry Pi Pico (RP2040) / Pico 2 (RP2350) と SG12864 の組み合わせ向けのビルド環境を置いています。
+- `examples/rp2/` には、Raspberry Pi Pico (RP2040) / Pico 2 (RP2350) と TG12864B の組み合わせ向けのビルド環境を置いています。
 
 ```sh
 export PICO_SDK_PATH=...
