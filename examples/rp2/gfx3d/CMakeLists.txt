@@ -46,6 +46,7 @@ target_link_libraries(shapogfx PRIVATE hardware_interp_headers)
 add_executable(gfx3d
     main.cpp
     ${PDMFRC_EXAMPLES_CORE_DIR}/gfx3d/scene.cpp
+    ${PDMFRC_EXAMPLES_CORE_DIR}/gfx3d/title.cpp
 )
 target_include_directories(gfx3d PRIVATE ${PDMFRC_EXAMPLES_CORE_DIR}/gfx3d)
 target_compile_definitions(gfx3d PRIVATE
