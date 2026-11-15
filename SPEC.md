@@ -1,4 +1,4 @@
-# pdmfrc 仕様
+# PDM-FRC 仕様
 
 Temporal Dithering Using Pulse Density Modulation.
 

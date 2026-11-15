@@ -1,4 +1,4 @@
-# pdmfrc as an ESP-IDF component (see cmake/esp_idf.cmake and Kconfig).
+# PDM-FRC as an ESP-IDF component (see cmake/esp_idf.cmake and Kconfig).
 # Keep "version" in sync with include/pdmfrc/version.hpp and library.json.
 version: "1.0.0"
 description: >-

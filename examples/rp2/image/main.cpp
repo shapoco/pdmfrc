@@ -54,7 +54,7 @@ int main() {
   app::resetPhase();
 
   app::Hooks hooks;
-  hooks.title = "pdmfrc image (RGB565 via palette LUT)";
+  hooks.title = "PDM-FRC image (RGB565 via palette LUT)";
   hooks.onKey = on_key;
   hooks.printStatus = print_status;
   hooks.help = " g    LUT <-> gray conversion";

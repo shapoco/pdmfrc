@@ -29,6 +29,6 @@ int main() {
   app::resetPhase();
 
   app::Hooks hooks;
-  hooks.title = "pdmfrc gradient (levels 0..255, no LUT)";
+  hooks.title = "PDM-FRC gradient (levels 0..255, no LUT)";
   app::run(hooks);
 }

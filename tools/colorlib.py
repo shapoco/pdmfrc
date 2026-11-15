@@ -1,4 +1,4 @@
-"""Common color processing of the pdmfrc tools: RGB565, OKLab and LUTs.
+"""Common color processing of the PDM-FRC tools: RGB565, OKLab and LUTs.
 
 The LUTs follow the same algorithm as Pdm::initLut() (src/lut.cpp), but in
 floating point: a color almost equidistant from two palette entries may

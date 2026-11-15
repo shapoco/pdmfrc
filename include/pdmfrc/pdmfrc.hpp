@@ -1,4 +1,4 @@
-// pdmfrc: Temporal Dithering Using Pulse Density Modulation
+// PDM-FRC: Temporal Dithering Using Pulse Density Modulation
 // SPDX-License-Identifier: MIT
 //
 // Blinks the pixels of a monochrome LCD with first-order delta-sigma

@@ -1,5 +1,5 @@
 // 3D demo: a metal cube floating over wavy water under a sunset sky.
-// core 1 renders the scene, core 0 pushes it to pdmfrc and drives the LCD.
+// core 1 renders the scene, core 0 pushes it to PDM-FRC and drives the LCD.
 // SPDX-License-Identifier: MIT
 #include <stdio.h>
 
@@ -83,7 +83,7 @@ void core1_main() {
   }
 }
 
-// Back buffer (BB_W x BB_H) -> pdmfrc. The image is centered on the screen:
+// Back buffer (BB_W x BB_H) -> PDM-FRC. The image is centered on the screen:
 // what does not fit is cropped, the margins are level 0
 void push_frame() {
   const uint32_t t0 = time_us_32();
@@ -196,7 +196,7 @@ int main() {
   reset_local_stats();
 
   app::Hooks hooks;
-  hooks.title = "pdmfrc gfx3d (core1: render, core0: push + pop)";
+  hooks.title = "PDM-FRC gfx3d (core1: render, core0: push + pop)";
   hooks.onKey = on_key;
   hooks.afterPop = after_pop;
   hooks.printStatus = print_status;

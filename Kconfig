@@ -1,7 +1,7 @@
-# Options of pdmfrc as an ESP-IDF component (idf.py menuconfig). Each symbol
+# Options of PDM-FRC as an ESP-IDF component (idf.py menuconfig). Each symbol
 # is CONFIG_<macro> of a compile-time option of SPEC.md and is turned into that
 # macro by cmake/esp_idf.cmake.
-menu "pdmfrc"
+menu "PDM-FRC"
 
     config PDMFRC_POS_8BIT
         bool "8-bit coordinates"

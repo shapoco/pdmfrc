@@ -1,4 +1,4 @@
-# pdmfrc サンプル (RP2040 / RP2350)
+# PDM-FRC サンプル (RP2040 / RP2350)
 
 [English](README.md)
 

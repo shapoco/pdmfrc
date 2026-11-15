@@ -1,4 +1,4 @@
-# pdmfrc
+# PDM-FRC
 
 Temporal Dithering Using Pulse Density Modulation
 
@@ -6,7 +6,7 @@ Temporal Dithering Using Pulse Density Modulation
 
 ![](./image/cover.jpg)
 
-pdmfrc は、モノクロ液晶で中間調や擬似カラーを表示するライブラリです。
+PDM-FRC は、モノクロ液晶で中間調や擬似カラーを表示するライブラリです。
 
 🎥 動画: https://x.com/shapoco/status/2121240088273428980
 
@@ -99,7 +99,7 @@ target_link_libraries(your_app pdmfrc)
 
 **PlatformIO**: `lib_deps` にリポジトリを追加してください。
 
-**ESP-IDF**: リポジトリをコンポーネントとして追加してください。オプションは `idf.py menuconfig` の「pdmfrc」にあります。
+**ESP-IDF**: リポジトリをコンポーネントとして追加してください。オプションは `idf.py menuconfig` の「PDM-FRC」にあります。
 
 ## ほかの表示器に対応させる
 

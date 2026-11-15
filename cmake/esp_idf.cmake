@@ -1,4 +1,4 @@
-# pdmfrc as an ESP-IDF component, included by the CMakeLists.txt of the
+# PDM-FRC as an ESP-IDF component, included by the CMakeLists.txt of the
 # repository under ESP-IDF. The options come from Kconfig (idf.py menuconfig).
 set(PDMFRC_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 

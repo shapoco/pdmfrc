@@ -1,4 +1,4 @@
-# pdmfrc
+# PDM-FRC
 
 Temporal Dithering Using Pulse Density Modulation
 
@@ -6,7 +6,7 @@ Temporal Dithering Using Pulse Density Modulation
 
 ![](./image/cover.jpg)
 
-pdmfrc shows intermediate tones and pseudo colors on a monochrome LCD. It
+PDM-FRC shows intermediate tones and pseudo colors on a monochrome LCD. It
 blinks each pixel quickly with first-order delta-sigma modulation (PDM). The
 liquid crystal responds slowly, so the eye sees the average. On an STN panel
 this average is not only a shade of gray: the panel's color shifts with the
@@ -104,7 +104,7 @@ Options (cache variables):
 
 **PlatformIO**: add the repository to `lib_deps`.
 
-**ESP-IDF**: use the repository as a component. The options are in `idf.py menuconfig` under "pdmfrc".
+**ESP-IDF**: use the repository as a component. The options are in `idf.py menuconfig` under "PDM-FRC".
 
 ## Supporting another display
 
