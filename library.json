@@ -1,6 +1,6 @@
 {
   "name": "pdmfrc",
-  "version": "1.0.1",
+  "version": "1.1.2",
   "description": "Temporal dithering for monochrome LCDs: blinks the pixels with pulse density modulation so that the slow response of the liquid crystal shows intermediate tones and pseudo colors. Converts GRAY8 / RGB565 images through a palette LUT and outputs packed 1-bit frames. No dynamic memory, no platform dependencies.",
   "keywords": [
     "lcd",

@@ -21,4 +21,12 @@ void draw(pdmfrc::Pdm& pdm) {
   }
 }
 
+void drawAntiGhostPattern(pdmfrc::Pdm& pdm, uint8_t level) {
+  const pdmfrc::Config& cfg = pdm.getConfig();
+  const int bw = cfg.width / 4;
+  pdm.fill(level);
+  pdm.fill(255, (pdmfrc::pos_t)((cfg.width - bw) / 2), 0, (pdmfrc::pos_t)bw,
+           (pdmfrc::pos_t)(cfg.height / 2));
+}
+
 }  // namespace gradient

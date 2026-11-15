@@ -14,6 +14,8 @@ static const LcdModule TG12864B = {
     {128, 64, PixelFormat::RGB565_SWAPPED, CFG_FLAG_PACK_V8 | CFG_FLAG_LSB1ST | CFG_FLAG_USE_LUT},
     103 << 8,
     palettes::TG12864B,
+    0,
+    256,
 };
 
 }  // namespace configs

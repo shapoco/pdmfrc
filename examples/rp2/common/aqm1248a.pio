@@ -1,0 +1,27 @@
+; AQM1248A (ST7565R, 4-line SPI) write
+;
+; side-set: GPIO18 (SCK), OUT: GPIO19 (SDI), SET: GPIO20 (RS)
+; 1 bit = 2 PIO clocks (SCK = PIO clock / 2). SDI changes at the falling edge
+; of SCK and the LCD latches it at the rising edge.
+;
+; FIFO word (shift left, autopull threshold 9). 16-bit DMA writes are
+; replicated to both halves, so a stream entry is a uint16_t:
+;   bit 15 = RS (1: display data, 0: command), bits 14..7 = byte (MSB first)
+; CS is driven by the CPU between the transfers.
+
+.program aqm1248a
+.side_set 1
+
+.wrap_target
+    out x, 1            side 0      ; RS
+    jmp !x cmd          side 0
+    set pins, 1         side 0
+    jmp start           side 0
+cmd:
+    set pins, 0         side 0
+start:
+    set y, 7            side 0
+bitloop:
+    out pins, 1         side 0
+    jmp y-- bitloop     side 1
+.wrap

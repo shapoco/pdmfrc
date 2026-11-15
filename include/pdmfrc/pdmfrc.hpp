@@ -39,6 +39,10 @@ constexpr uint8_t CFG_FLAG_PACK_V8 =
 constexpr uint8_t CFG_FLAG_LSB1ST = 0x02;   // the LSB is the left / top pixel (default: the MSB)
 constexpr uint8_t CFG_FLAG_INVERT = 0x04;   // output bit 0 for ON
 constexpr uint8_t CFG_FLAG_USE_LUT = 0x08;  // reserve a LUT in the arena (needed by Pdm::initLut())
+// Anti-ghost (Pdm::setAntiGhost()): lowers the levels of each row / column by
+// an amount proportional to the sum of its levels. Not both
+constexpr uint8_t CFG_FLAG_ANTIGHOST_ROW = 0x10;
+constexpr uint8_t CFG_FLAG_ANTIGHOST_COL = 0x20;
 
 // flags of Pdm::push()
 constexpr uint8_t PUSH_FLAG_X_FLIP = 0x01;   // reverse the X scan direction
@@ -60,6 +64,8 @@ struct LcdModule {
   Config config;                // recommended Config
   uint32_t fpsQ8;               // recommended frame rate, 8 fractional bits
   const uint8_t (*palette)[3];  // level -> apparent color (256 entries, RGB888)
+  uint8_t antiGhost;            // recommended strength of the anti-ghost (Pdm::setAntiGhost())
+  uint16_t antiGhostGammaQ8;    // recommended gamma of the anti-ghost, 8 fractional bits
 };
 
 // A Config with the given values
@@ -101,6 +107,16 @@ class Pdm {
   bool fill(uint8_t level, pos_t dx, pos_t dy, pos_t dw, pos_t dh);
   bool fill(uint8_t level);
 
+  // Anti-ghost (CFG_FLAG_ANTIGHOST_*). A line (row / column) gets the amount
+  // strength * (sum of f(level)) / (255 * its length), subtracted from its
+  // levels by pop() without changing the levels: strength is the amount of a
+  // line all of whose levels are 255. f(l) = 255 * (l / 255)^gamma weights the
+  // levels (gammaQ8: gamma with 8 fractional bits, > 0; 256 = linear). Strength
+  // 0 (the default after init()) disables it
+  bool setAntiGhost(uint8_t strength, uint16_t gammaQ8 = 256);
+  uint8_t getAntiGhost() const { return agStrength_; }
+  uint16_t getAntiGhostGamma() const { return agGammaQ8_; }
+
   // Initializes the accumulators
   void resetPhase(Phase phase, uint32_t seed = 1);
 
@@ -115,8 +131,14 @@ class Pdm {
   uint8_t* acc_ = nullptr;   // accumulators
   uint8_t* lutBuf_ = nullptr;
   const uint8_t* lut_ = nullptr;
+  uint8_t* agOffset_ = nullptr;  // anti-ghost: amount subtracted from each line
+  uint8_t* agCurve_ = nullptr;   // anti-ghost: f(level), 256 entries
+  uint8_t agStrength_ = 0;
+  uint16_t agGammaQ8_ = 256;
 
   bool inside(pos_t x, pos_t y, pos_t w, pos_t h) const;
+  // Recomputes the anti-ghost amounts of the lines crossing the rectangle
+  void updateAntiGhost(int x, int y, int w, int h);
 };
 
 }  // namespace pdmfrc

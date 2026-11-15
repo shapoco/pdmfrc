@@ -10,12 +10,13 @@ The display is chosen at build time (see [Build](#build)):
 | Display | `PDMFRC_DISPLAY` | Notes |
 |---|---|---|
 | TG12864B (128x64, KS0108 compatible) | `tg12864b` (default) | |
+| AQM1248A (128x48, ST7565R) | `aqm1248a` | gfx3d is cropped to 48x128 |
 
 | Directory | Contents | System clock | Displays |
 |---|---|---|---|
 | [gradient](gradient) | Gradient of levels 0..255, for making a palette | 125 MHz | all |
-| [image](image) | A still image through the palette LUT | 125 MHz | TG12864B |
-| [gfx3d](gfx3d) | Real-time 3D: a metal cube over wavy water (requires [ShapoGFX](https://github.com/shapoco/shapo-gfx)) | 250 MHz | TG12864B |
+| [image](image) | A still image through the palette LUT | 125 MHz | TG12864B, AQM1248A |
+| [gfx3d](gfx3d) | Real-time 3D: a metal cube over wavy water (requires [ShapoGFX](https://github.com/shapoco/shapo-gfx)) | 250 MHz | TG12864B, AQM1248A |
 
 The LCD is written by PIO + DMA. Every frame, the bitmap from `Pdm::pop()` is
 sent at a fixed rate (103 fps for the TG12864B).
@@ -52,6 +53,30 @@ sent at a fixed rate (103 fps for the TG12864B).
   LCD drives DB0..DB7 during status reads. If the module runs at 5 V, use a
   level shifter, or switch to fixed cycle mode (`w` key) and tie R/W to GND.
 
+## Wiring (AQM1248A)
+
+| Pico | AQM1248A | Notes |
+|---|---|---|
+| GPIO16 | RST | Active Low |
+| GPIO17 | CS | Active Low |
+| GPIO18 | SCK | |
+| GPIO19 | SDI | |
+| GPIO20 | RS | |
+| 3V3 (OUT) | VDD | 3.0 V typ, 3.6 V max |
+| GND | GND | |
+
+- The LCD scans by its own oscillator (about 128..179 Hz by the datasheet). It
+  cannot be adjusted nor synchronized, so find the frame rate with the least
+  noise by eye (`[` / `]`, `{` / `}`).
+- Many dark pixels in a column (the short side, 48 px) darken the whole
+  column. The anti-ghost of the columns cancels it, with strength 107 and
+  gamma 0.45 at start (the palette was made with them). To tune them, show
+  the tuning pattern of the gradient example (`t`) and change the strength
+  (`a` / `A`) and the gamma (`e` / `E`) until the area below the black block
+  looks the same as the rest. The background levels near both ends
+  (`l` / `L`) hide the difference: tune the strength at a background of about
+  40..64 and the gamma at about 128, and repeat. The palette depends on them.
+
 ## Prebuilt binaries
 
 Prebuilt binaries can be downloaded from the
@@ -71,6 +96,7 @@ export SHAPOGFX_PATH=/path/to/shapo-gfx   # gfx3d only (v1.12.0 or later)
 
 examples/rp2/image/build.sh            # Pico (RP2040)
 examples/rp2/image/build.sh pico2      # Pico 2 (RP2350)
+examples/rp2/gradient/build.sh pico aqm1248a   # AQM1248A
 ```
 
 `build.sh [board] [display] [options...]` runs the following. The display is
@@ -100,6 +126,9 @@ terminal and press `h` for help.
 |---|---|
 | `f` / `F` | Frame rate preset down / up |
 | `[` / `]` | Frame rate -1 / +1 fps |
+| `{` / `}` | Frame rate -0.1 / +0.1 fps |
+| `a` / `A` | Anti-ghost strength -1 / +1 (displays with the anti-ghost only: AQM1248A) |
+| `e` / `E` | Anti-ghost gamma -0.05 / +0.05 (same as above) |
 | `r` | Next phase mode, then reset the phase |
 | `R` | Reset the phase |
 | `s` | Status (and reset the statistics) |
@@ -111,11 +140,17 @@ Keys of each display:
 |---|---|---|
 | TG12864B | `b` / `B` | Bus cycle shorter / longer |
 | TG12864B | `w` | Busy wait / fixed cycle |
+| AQM1248A | `c` / `C` | SCLK down / up (1..20 MHz) |
+| AQM1248A | `k` / `K` | Contrast (electronic volume) -1 / +1 |
+| AQM1248A | `x` / `X` | V0 regulator resistor ratio -1 / +1 |
+| AQM1248A | `u` | Rotate 180 degrees |
 
 Keys of each example:
 
 | Example | Key | Action |
 |---|---|---|
+| gradient | `t` | Gradient / anti-ghost tuning pattern |
+| gradient | `l` / `L` | Background level of the tuning pattern -4 / +4 |
 | image | `g` | LUT / gray conversion |
 | gfx3d | `y` | Frame sync on / off |
 | gfx3d | `o` | Rotation (0 / ccw90 / 180 / cw90) |

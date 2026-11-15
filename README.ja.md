@@ -103,10 +103,16 @@ target_link_libraries(your_app pdmfrc)
 
 ## ほかの表示器に対応させる
 
+同梱の推奨設定は `configs::TG12864B` (128x64、KS0108 互換) と `configs::AQM1248A` (128x48、ST7565R) です。
+
 1. 表示器で gradient サンプル (左から右へ階調値 0..255) を、一定のフレームレートで表示します。
 2. 画面を撮影し、見かけの色を 256x1 px のパレット画像にします。
-3. `tools/pal2cpp.py` でパレット画像をヘッダに変換します。
+3. 撮影のむらで明るさが戻る箇所があれば、`tools/palfix.py` で補正します。そのあと `tools/pal2cpp.py` でパレット画像をヘッダに変換します。
 4. [include/pdmfrc/configs/tg12864b.hpp](include/pdmfrc/configs/tg12864b.hpp) にならって `LcdModule` を定義します。
+
+### アンチゴースト
+
+AQM1248A のように、暗い画素が多い列 (または行) 全体が暗く見える表示器のための補正です。`Config::flags` に `CFG_FLAG_ANTIGHOST_COL` (列) または `CFG_FLAG_ANTIGHOST_ROW` (行) を指定すると、各列 (行) の階調値の合計に比例する量を、pop のときにその列 (行) の階調値から差し引きます。強さとガンマは `setAntiGhost()` で指定します (`LcdModule::antiGhost`、`antiGhostGammaQ8` が推奨値)。ガンマを 1 より小さくすると、合計するときに中間の階調値を重く数えます。gradient サンプルの調整用パターンを見ながら決めてください。
 
 ## サンプル
 
@@ -117,7 +123,7 @@ target_link_libraries(your_app pdmfrc)
 | [gfx3d](examples/core/gfx3d) | 波打つ水面に浮かぶ金属キューブのリアルタイム 3D ([ShapoGFX](https://github.com/shapoco/shapo-gfx) が必要) |
 
 - `examples/core/` には、アーキテクチャに依存しない部分を置いています。
-- `examples/rp2/` には、Raspberry Pi Pico (RP2040) / Pico 2 (RP2350) 向けのビルド環境 (TG12864B) を置いています。詳細は [examples/rp2/README.ja.md](examples/rp2/README.ja.md) を参照してください。
+- `examples/rp2/` には、Raspberry Pi Pico (RP2040) / Pico 2 (RP2350) 向けのビルド環境 (TG12864B、AQM1248A) を置いています。詳細は [examples/rp2/README.ja.md](examples/rp2/README.ja.md) を参照してください。
 
 RP2 向けサンプルのビルド済みバイナリ (`.uf2`) は、[Releases](https://github.com/shapoco/pdmfrc/releases) ページからダウンロードできます。接続は [examples/rp2](examples/rp2/README.ja.md) を参照してください。
 
@@ -128,6 +134,7 @@ Python 3、Pillow、NumPy が必要です。
 | スクリプト | 用途 |
 |---|---|
 | `tools/pal2cpp.py` | パレット画像 → C++ ヘッダ (RGB888) |
+| `tools/palfix.py` | パレット画像の明るさが戻る箇所を直線で埋めて単調にする |
 | `tools/mklut.py` | パレット画像 → 生成済み LUT のヘッダ (`Pdm::setLut()` 用) |
 | `tools/img2cpp.py` | 画像 → GRAY8 / RGB565 / RGB565_SWAPPED のヘッダ |
 | `tools/preview.py` | 表示器での見かけの色を予測する |

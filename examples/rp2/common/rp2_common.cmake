@@ -10,7 +10,7 @@ set(SYS_CLOCK_KHZ 125000 CACHE STRING "System clock [kHz]")
 
 # Display (common/display_<name>.cpp). To add a display: add its name here,
 # its driver sources in pdmfrc_rp2_example() and its size in display.hpp
-set(PDMFRC_DISPLAYS tg12864b)
+set(PDMFRC_DISPLAYS tg12864b aqm1248a)
 set(PDMFRC_DISPLAY tg12864b CACHE STRING "Display: ${PDMFRC_DISPLAYS}")
 set_property(CACHE PDMFRC_DISPLAY PROPERTY STRINGS ${PDMFRC_DISPLAYS})
 if(NOT PDMFRC_DISPLAY IN_LIST PDMFRC_DISPLAYS)
@@ -38,6 +38,9 @@ function(pdmfrc_rp2_example target)
     if(PDMFRC_DISPLAY STREQUAL "tg12864b")
         target_sources(${target} PRIVATE ${PDMFRC_RP2_COMMON_DIR}/tg12864b.cpp)
         pico_generate_pio_header(${target} ${PDMFRC_RP2_COMMON_DIR}/tg12864b_write.pio)
+    elseif(PDMFRC_DISPLAY STREQUAL "aqm1248a")
+        target_sources(${target} PRIVATE ${PDMFRC_RP2_COMMON_DIR}/aqm1248a.cpp)
+        pico_generate_pio_header(${target} ${PDMFRC_RP2_COMMON_DIR}/aqm1248a.pio)
     endif()
     string(TOUPPER ${PDMFRC_DISPLAY} display_upper)
     target_compile_definitions(${target} PRIVATE PDMFRC_DISPLAY_${display_upper}=1)

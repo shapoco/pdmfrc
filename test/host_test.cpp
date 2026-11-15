@@ -8,6 +8,7 @@
 
 #include <vector>
 
+#include "pdmfrc/configs/aqm1248a.hpp"
 #include "pdmfrc/configs/tg12864b.hpp"
 #include "pdmfrc/pdmfrc.hpp"
 
@@ -184,7 +185,27 @@ void testPush(uint8_t cfgFlags, PixelFormat fmt) {
 }
 
 // pop of rectangles (with stride) against a full-screen reference model
-void testPop(uint8_t cfgFlags) {
+// Anti-ghost amount of each pixel (SPEC.md 3.14) for the levels img
+void refAntiGhost(uint8_t cfgFlags, int strength, int gammaQ8, const std::vector<uint8_t>& img,
+                  int W, int H, std::vector<uint8_t>& amount) {
+  uint32_t f[256];
+  for (int l = 0; l < 256; ++l) {
+    f[l] = (uint32_t)(255.0f * powf((float)l / 255.0f, (float)gammaQ8 / 256.0f) + 0.5f);
+  }
+  amount.assign(W * H, 0);
+  const bool col = cfgFlags & CFG_FLAG_ANTIGHOST_COL;
+  if (!(cfgFlags & (CFG_FLAG_ANTIGHOST_ROW | CFG_FLAG_ANTIGHOST_COL))) return;
+  const int lines = col ? W : H, len = col ? H : W;
+  for (int i = 0; i < lines; ++i) {
+    uint32_t sum = 0;
+    for (int j = 0; j < len; ++j) sum += f[col ? img[j * W + i] : img[i * W + j]];
+    const uint32_t den = (uint32_t)len * 255;
+    const uint8_t a = (uint8_t)((sum * (uint32_t)strength + den / 2) / den);
+    for (int j = 0; j < len; ++j) amount[col ? j * W + i : i * W + j] = a;
+  }
+}
+
+void testPop(uint8_t cfgFlags, int strength, int gammaQ8 = 256) {
   const int W = 64, H = 32;
   Config cfg;
   getDefaultConfig(&cfg, W, H, PixelFormat::GRAY8, cfgFlags);
@@ -194,7 +215,16 @@ void testPop(uint8_t cfgFlags) {
   std::vector<uint8_t> img(W * H);
   for (auto& v : img) v = (uint8_t)rnd();
   CHECK(pdm.push(img.data()));
+  const bool ag = cfgFlags & (CFG_FLAG_ANTIGHOST_ROW | CFG_FLAG_ANTIGHOST_COL);
+  CHECK(pdm.setAntiGhost((uint8_t)strength, (uint16_t)gammaQ8) == ag);
+  if (!ag) {
+    strength = 0;
+    gammaQ8 = 256;
+  }
+  CHECK(pdm.getAntiGhost() == strength);
+  CHECK(pdm.getAntiGhostGamma() == gammaQ8);
   pdm.resetPhase(Phase::RANDOM, 777);
+  std::vector<uint8_t> amount;
 
   // reference accumulators: same RANDOM sequence (y then x)
   std::vector<uint8_t> acc(W * H);
@@ -208,6 +238,21 @@ void testPop(uint8_t cfgFlags) {
 
   const bool v8 = cfgFlags & CFG_FLAG_PACK_V8;
   for (int frame = 0; frame < 50; ++frame) {
+    // changes some levels (and the strength) between the frames
+    if (frame % 3 == 1) {
+      const int dx = rndRange(W), dy = rndRange(H);
+      const int dw = 1 + rndRange(W - dx), dh = 1 + rndRange(H - dy);
+      const uint8_t level = (uint8_t)rnd();
+      CHECK(pdm.fill(level, (pos_t)dx, (pos_t)dy, (pos_t)dw, (pos_t)dh));
+      for (int y = dy; y < dy + dh; ++y)
+        for (int x = dx; x < dx + dw; ++x) img[y * W + x] = level;
+    }
+    if (ag && frame == 25 && strength) {
+      strength = rndRange(256);
+      gammaQ8 = gammaQ8 == 256 ? 51 + rndRange(700) : 256;  // also back to linear
+      CHECK(pdm.setAntiGhost((uint8_t)strength, (uint16_t)gammaQ8));
+    }
+    refAntiGhost(cfgFlags, strength, gammaQ8, img, W, H, amount);
     // one frame as 4 quadrants with arbitrary order
     const int hw = W / 2, hh = H / 2;
     int order[4] = {0, 1, 2, 3};
@@ -226,7 +271,8 @@ void testPop(uint8_t cfgFlags) {
       CHECK(pdm.pop(out.data(), stride, sx, sy, hw, hh));
       for (int y = sy; y < sy + hh; ++y) {
         for (int x = sx; x < sx + hw; ++x) {
-          const uint32_t l = img[y * W + x];
+          const int la = (int)img[y * W + x] - amount[y * W + x];
+          const uint32_t l = la > 0 ? (uint32_t)la : 0;
           const uint32_t s = acc[y * W + x] + l + (l >> 7);
           acc[y * W + x] = (uint8_t)s;
           int bit = (int)(s >> 8);
@@ -241,7 +287,8 @@ void testPop(uint8_t cfgFlags) {
           }
           if (got != bit) {
             ++failures;
-            printf("FAIL pop flags=0x%02x frame=%d (%d,%d)\n", cfgFlags, frame, x, y);
+            printf("FAIL pop flags=0x%02x strength=%d frame=%d (%d,%d)\n", cfgFlags, strength,
+                   frame, x, y);
             return;
           }
         }
@@ -267,7 +314,7 @@ void testErrors() {
   uint8_t img[64 * 64] = {};
   CHECK(!pdm.push(img, 0, 10, 0, 11, 1));                   // outside
   CHECK(!pdm.push(img, 0, 0, 0, 1, 1, PUSH_FLAG_USE_LUT));  // no LUT
-  CHECK(!pdm.initLut(configs::TG12864B.palette));            // no CFG_FLAG_USE_LUT
+  CHECK(!pdm.initLut(configs::TG12864B.palette));           // no CFG_FLAG_USE_LUT
   uint8_t out[64];
   CHECK(!pdm.pop(out, 0, 0, 4, 20, 8));     // sy not a multiple of 8
   CHECK(!pdm.pop(out, 0, 0, 0, 20, 8, 1));  // flags
@@ -363,13 +410,80 @@ void testLutFiles(const char* lut565Path, const char* lutGrayPath) {
 
 }  // namespace
 
+// The recommended settings of the displays: init, LUT, and the LUT of a gray
+// palette that saturates (AQM1248A: white below 22, black from 128)
+void testAntiGhostConfig() {
+  Config cfg;
+  getDefaultConfig(&cfg, 64, 32, PixelFormat::GRAY8, CFG_FLAG_PACK_V8);
+  const size_t base = calcRequiredArenaSize(cfg);
+  cfg.flags |= CFG_FLAG_ANTIGHOST_COL;
+  CHECK(calcRequiredArenaSize(cfg) == base + 256 + 64);  // curve + amounts
+  cfg.flags = CFG_FLAG_ANTIGHOST_ROW;
+  CHECK(calcRequiredArenaSize(cfg) == base + 256 + 32);
+  cfg.width = 40;
+  cfg.height = 5;  // 5 rows -> 8 bytes (4-byte multiple)
+  CHECK(calcRequiredArenaSize(cfg) == (size_t)40 * 5 * 2 + 256 + 8);
+  std::vector<uint32_t> arena(2048);
+  Pdm pdm;
+  getDefaultConfig(&cfg, 64, 32, PixelFormat::GRAY8,
+                   CFG_FLAG_ANTIGHOST_ROW | CFG_FLAG_ANTIGHOST_COL);
+  CHECK(!pdm.init(cfg, (uint8_t*)arena.data(), arena.size() * 4));  // not both
+  cfg.flags = CFG_FLAG_ANTIGHOST_COL;
+  CHECK(pdm.init(cfg, (uint8_t*)arena.data(), arena.size() * 4));
+  CHECK(pdm.getAntiGhost() == 0);
+  CHECK(pdm.getAntiGhostGamma() == 256);
+  CHECK(!pdm.setAntiGhost(10, 0));  // gamma 0
+  CHECK(pdm.fill(255));
+  CHECK(pdm.setAntiGhost(100));
+  // all 255 -> each level 255 - 100
+  std::vector<uint8_t> out(64 * 32 / 8), acc(64 * 32, 0);
+  pdm.resetPhase(Phase::ZERO);
+  int ones = 0;
+  for (int f = 0; f < 256; ++f) {
+    CHECK(pdm.pop(out.data()));
+    for (uint8_t b : out)
+      for (int k = 0; k < 8; ++k) ones += (b >> k) & 1;
+  }
+  CHECK(ones == 156 * 64 * 32);  // level 155 -> 156 / 256
+}
+
+void testModules() {
+  const LcdModule* modules[] = {&configs::TG12864B, &configs::AQM1248A};
+  for (const LcdModule* m : modules) {
+    std::vector<uint32_t> arena(calcRequiredArenaSize(m->config) / 4 + 1);
+    Pdm pdm;
+    CHECK(pdm.init(m->config, (uint8_t*)arena.data(), arena.size() * 4));
+    CHECK(pdm.initLut(m->palette));
+  }
+  Config cfg = configs::AQM1248A.config;
+  cfg.inputFormat = PixelFormat::GRAY8;
+  std::vector<uint32_t> arena(calcRequiredArenaSize(cfg) / 4 + 1);
+  Pdm pdm;
+  CHECK(pdm.init(cfg, (uint8_t*)arena.data(), arena.size() * 4));
+  CHECK(pdm.initLut(configs::AQM1248A.palette));
+  const uint8_t* lut = pdm.getLut();
+  CHECK(lut[255] == 0);  // white: the smallest of the equally white levels
+  CHECK(lut[0] == 238);  // black: the smallest of the equally black levels
+  for (int g = 1; g < 256; ++g) CHECK(lut[g] <= lut[g - 1]);  // monotonic
+}
+
 int main(int argc, char** argv) {
   const PixelFormat fmts[] = {PixelFormat::GRAY8, PixelFormat::RGB565, PixelFormat::RGB565_SWAPPED};
   for (uint8_t f = 0; f < 8; ++f) {
     for (PixelFormat fmt : fmts) testPush(f, fmt);
-    testPop(f);
+    testPop(f, 0);
+    const int strengths[] = {0, 1, 40, 255};
+    const int gammas[] = {256, 128, 179, 512};
+    for (int st : strengths) {
+      for (int g : gammas) {
+        testPop(f | CFG_FLAG_ANTIGHOST_ROW, st, g);
+        testPop(f | CFG_FLAG_ANTIGHOST_COL, st, g);
+      }
+    }
   }
+  testAntiGhostConfig();
   testErrors();
+  testModules();
   if (argc >= 3) testLutFiles(argv[1], argv[2]);
   printf(failures ? "FAILED (%d)\n" : "OK\n", failures);
   return failures ? 1 : 0;

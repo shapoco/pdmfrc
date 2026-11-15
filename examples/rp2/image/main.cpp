@@ -15,8 +15,11 @@ namespace {
 
 const pdmfrc::LcdModule& MODULE = display::module();
 pdmfrc::Pdm pdm;
-// Planes + RGB565 LUT (R4G5B4)
-alignas(4) uint8_t arena[display::WIDTH * display::HEIGHT * 2 + 8192];
+// Planes + RGB565 LUT (R4G5B4) + anti-ghost curve and amounts (at most one per
+// row or column)
+constexpr size_t ARENA_SIZE =
+    display::WIDTH * display::HEIGHT * 2 + 8192 + 256 + display::WIDTH + display::HEIGHT;
+alignas(4) uint8_t arena[ARENA_SIZE];
 
 bool use_lut = true;
 uint32_t lut_build_us = 0;

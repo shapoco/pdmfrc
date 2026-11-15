@@ -25,14 +25,14 @@ pdmfrc/
 ├── include/pdmfrc/
 │   ├── pdmfrc.hpp               # 公開ヘッダ (これだけインクルードすればよい)
 │   ├── version.hpp
-│   ├── palettes/tg12864b.hpp    # assets/palettes/tg12864b.png から生成したパレット
-│   └── configs/tg12864b.hpp     # TG12864B の推奨設定 (LcdModule)
+│   ├── palettes/<display>.hpp   # assets/palettes/<display>.png から生成したパレット
+│   └── configs/<display>.hpp    # ディスプレイの推奨設定 (LcdModule。tg12864b, aqm1248a)
 ├── src/                        # ライブラリ実装 (アーキテクチャ非依存)
 ├── cmake/esp_idf.cmake         # ESP-IDF コンポーネントとしての登録
 ├── test/                       # ホスト用テスト (run.sh)
 ├── assets/
-│   ├── palettes/tg12864b.png    # 256x1 px パレット画像
-│   └── images/tg12864b.png      # image サンプル用の 128x64 画像
+│   ├── palettes/<display>.png   # 256x1 px パレット画像 (<display>_raw.png は palfix.py で補正する前の撮影結果)
+│   └── images/<display>.png     # image サンプル用の画像 (画面サイズ)
 ├── tools/                      # Python スクリプト (要 Python3 + Pillow + NumPy)
 ├── examples/
 │   ├── core/                   # サンプルのアーキテクチャ非依存部分
@@ -116,6 +116,8 @@ constexpr uint8_t CFG_FLAG_PACK_V8 = 0x01;  // 縦 8px を 1 バイトにパッ�
 constexpr uint8_t CFG_FLAG_LSB1ST = 0x02;   // パックしたバイトの LSB を左 (横) / 上 (縦) にする (未指定時は MSB)
 constexpr uint8_t CFG_FLAG_INVERT = 0x04;   // 出力ビットを反転する (ON = 0)
 constexpr uint8_t CFG_FLAG_USE_LUT = 0x08;  // arena に LUT の領域を確保する (initLut() に必要)
+constexpr uint8_t CFG_FLAG_ANTIGHOST_ROW = 0x10;  // 行方向のアンチゴースト (3.14)
+constexpr uint8_t CFG_FLAG_ANTIGHOST_COL = 0x20;  // 列方向のアンチゴースト (3.14)。ROW と同時には指定できない
 
 // push() のフラグ
 constexpr uint8_t PUSH_FLAG_X_FLIP = 0x01;   // X 座標の走査方向を反転
@@ -136,6 +138,8 @@ struct LcdModule {
   Config config;                // Config の推奨値
   uint32_t fpsQ8;               // 推奨フレームレート (小数部 8bit の固定小数点。TG12864B では 103 << 8)
   const uint8_t (*palette)[3];  // パレット (256 色, RGB888)
+  uint8_t antiGhost;            // アンチゴーストの強さの推奨値 (setAntiGhost())
+  uint16_t antiGhostGammaQ8;    // アンチゴーストのガンマの推奨値 (小数部 8bit。256 = 1.0)
 };
 
 }  // namespace pdmfrc
@@ -183,6 +187,11 @@ class Pdm {
   bool fill(uint8_t level, pos_t dx, pos_t dy, pos_t dw, pos_t dh);
   bool fill(uint8_t level);  // 画面全体
 
+  // アンチゴーストの強さとガンマ (3.14)。init() 直後は強さ 0 (無効)、ガンマ 1.0。CFG_FLAG_ANTIGHOST_* が必要
+  bool setAntiGhost(uint8_t strength, uint16_t gammaQ8 = 256);
+  uint8_t getAntiGhost() const;
+  uint16_t getAntiGhostGamma() const;
+
   // 状態面を初期化する
   void resetPhase(Phase phase, uint32_t seed = 1);
 
@@ -199,13 +208,14 @@ class Pdm {
 
 | 関数 | `false` になる条件 |
 |---|---|
-| `init` | 幅・高さが 0、パック方向の辺が 8 の倍数でない、arena 不足、arena が 4 バイト境界でない、入力形式が組み込まれていない |
+| `init` | 幅・高さが 0、パック方向の辺が 8 の倍数でない、arena 不足、arena が 4 バイト境界でない、入力形式が組み込まれていない、`CFG_FLAG_ANTIGHOST_ROW` と `_COL` の両方を指定 |
 | `initLut` | `CFG_FLAG_USE_LUT` なし、palette が null |
 | `push` | 未初期化、矩形が画面外にはみ出す、image が null、`PUSH_FLAG_USE_LUT` 指定時に LUT 未設定 |
 
 幅または高さが 0 の矩形への push / fill は何もせず `true` を返す。
 | `fill` | 未初期化、矩形が画面外にはみ出す |
 | `pop` | 未初期化、矩形が画面外にはみ出す、パック方向の座標・サイズが 8 の倍数でない、flags ≠ 0 |
+| `setAntiGhost` | 未初期化、`CFG_FLAG_ANTIGHOST_*` なし、`gammaQ8` = 0 |
 
 ### 3.5 arena の内訳
 
@@ -214,6 +224,7 @@ class Pdm {
 | デューティ面 | `width * height` |
 | 状態面 | `width * height` |
 | LUT (`CFG_FLAG_USE_LUT` 時) | `calcLutSize(inputFormat)` |
+| アンチゴーストの曲線と補正量 (`CFG_FLAG_ANTIGHOST_*` 時) | 256 + (列方向は `width`、行方向は `height` を 4 の倍数に切り上げた値) |
 
 面の並び (どちらの面も同じ):
 
@@ -299,6 +310,9 @@ a = s & 0xFF
 - push / fill と pop は別のコア・スレッドから同時に呼んでよい。デューティ面の読み書きはバイト単位なので、
   途中の値を読んでもその画素が新旧どちらかの値になるだけ (ティアリングは許容)。
 - `init`, `initLut`, `setLut`, `resetPhase` は pop と同時に呼ばないこと。
+- `setAntiGhost` は pop と同時に呼んでよい (補正量の更新もバイト単位)。曲線の作り直しには float の `powf` を
+  256 回使う (FPU のないマイコンでは数 ms かかることがある)。push / fill と同時に呼ぶと、
+  次にその行・列を push / fill するまで、一部の補正量が古い強さのまま残ることがある。
 - 同じ Pdm に対して push 同士、pop 同士を同時に呼ばないこと。
 
 ### 3.12 性能
@@ -313,6 +327,28 @@ a = s & 0xFF
 - AVR などハーバードアーキテクチャの `const` 配列は RAM に置かれる。パレット (768 バイト) や
   生成済み LUT をフラッシュに置く `PROGMEM` 対応は今回は行わない。
 - 状態は 1 画素 2 バイトのため、128x64 で 16KB の RAM が必要。
+
+### 3.14 アンチゴースト
+
+パッシブマトリクス液晶では、ON の画素が多いライン (行または列) 全体が濃く見えることがある (ゴースト)。
+これを打ち消すため、ラインの階調値の合計に比例する量 (補正量) を、そのラインの全画素の階調値から差し引いて PDM する。
+
+- 方向は `CFG_FLAG_ANTIGHOST_COL` (列 = 画面の x ごと、長さ `height`) か `CFG_FLAG_ANTIGHOST_ROW`
+  (行 = y ごと、長さ `width`) で選ぶ。座標は状態面 (表示器本来の向き) のもので、push の回転とは無関係。
+- ライン `i` の補正量: `a_i = (S_i * strength + D / 2) / D`。`S_i` はラインの画素の `f(階調値)` の合計、
+  `D = 長さ * 255`。つまり `strength` は「全画素 255 のラインから差し引く量」。
+- `f(l) = floor(255 * powf(l / 255, γ) + 0.5)` (float で計算、`γ = gammaQ8 / 256`)。256 要素の表として
+  arena に置き、ガンマが変わったときだけ作り直す。γ = 1 のときは表を引かずに階調値をそのまま足す。
+  γ < 1 は中間の階調値を重く数える。ゴーストが ON の画素数だけでなく ON / OFF の切り替わり
+  (中間の階調値で多い) にも依存する場合に合わせるためのもの。
+- pop は 3.9 の `l` の代わりに `max(l - a_i, 0)` を使う。デューティ面の階調値そのものは変えない。
+- 階調値は「ON の割合」なので、ポジ / ネガ、`CFG_FLAG_INVERT` によらず同じ式でよい。
+- 補正量は arena に保持し、push / fill のたびに、書き換えた矩形が交わるラインだけ計算し直す。
+  `setAntiGhost` は全ラインを計算し直す。したがって補正は同じフレームから効き、遅れない。
+  (合計は補正前の階調値で計算する。補正で実際のゴーストが減る分は strength の調整で吸収する。)
+- 白 (階調値 0) より明るくはできないため、背景が白でも暗くなるほどのゴーストは打ち消せない。
+- 性能: 補正なしの pop は従来どおりの経路を通る。補正ありでは、Arm の DSP 拡張 (`__ARM_FEATURE_SIMD32`。
+  RP2350 の Cortex-M33 など) があれば `UQSUB8` で 4 画素ずつ飽和減算し、なければ画素ごとに分岐なしで減算する。
 
 ## 4. パレット・推奨設定ヘッダ
 
@@ -335,17 +371,43 @@ static const LcdModule TG12864B = {
   {128, 64, PixelFormat::RGB565_SWAPPED, CFG_FLAG_PACK_V8 | CFG_FLAG_LSB1ST | CFG_FLAG_USE_LUT},
   103 << 8,
   palettes::TG12864B,
+  0,    // アンチゴーストなし
+  256,
 };
 }}
 ```
 
 (KS0108 は縦 8px パック・LSB が上・ビット 1 で点灯。)
 
+### `include/pdmfrc/configs/aqm1248a.hpp`
+
+AQM1248A (128x48, ST7565R, FSTN ポジ)。ST7565R は縦 8px パック・LSB が上・ビット 1 で黒。
+
+```cpp
+static const LcdModule AQM1248A = {
+  {128, 48, PixelFormat::RGB565_SWAPPED,
+   CFG_FLAG_PACK_V8 | CFG_FLAG_LSB1ST | CFG_FLAG_USE_LUT | CFG_FLAG_ANTIGHOST_COL},
+  73 << 8,
+  palettes::AQM1248A,
+  107,  // アンチゴーストの強さ
+  115,  // アンチゴーストのガンマ 0.45
+};
+```
+
+- 液晶は内蔵発振で走査し同期できないため、フレームレートは目視で決めた (73 fps。走査周波数の約半分)。
+- 暗い画素が多い列 (SEG。短辺方向の 48px) 全体が暗く見えるため、列方向のアンチゴーストを有効にする。
+  強さ 107、ガンマ 0.45 は gradient の調整用パターンを目視で合わせて決めた。
+- パレットは 73 fps、V0 レギュレータ抵抗比 4、電子ボリューム 22 (V0 約 7.8 V)、上記のアンチゴーストを有効にした
+  gradient を撮影した写真を元に作成した (`aqm1248a_raw.png`)。暗い側で明度が戻る 2 か所 (階調値 187..203,
+  209..228) を `palfix.py` で補正したものが `aqm1248a.png`。階調値 0..76 は白、77..237 がグラデーション
+  (190 付近からはほぼ黒)、238 以上は黒。電子ボリューム等は LcdModule の範囲外なので、RP2 のドライバの初期値としている。
+
 ## 5. ツール (`tools/`)
 
 | スクリプト | 機能 |
 |---|---|
 | `pal2cpp.py` | 256x1 px のパレット画像 → `uint8_t [256][3]` (RGB888) の C++ ヘッダ |
+| `palfix.py` | パレット画像の明度 (OKLab L) を単調にする。明度が戻る箇所を、その手前 (戻った先と同じ値の平坦部の直前) から、その値を超えて進む最初の階調値までの RGB の直線で置き換える。向きは両端から自動判定 (`--direction` で指定可)。出力を省略すると置き換える範囲の表示のみ |
 | `mklut.py` | パレット画像 → 生成済み LUT の C++ ヘッダ (入力形式・ビット数を指定)。`initLut` と同じ算法だが、浮動小数点の差で最近傍がほぼ等距離の色はまれに異なる |
 | `img2cpp.py` | PNG → GRAY8 / RGB565 / RGB565_SWAPPED の C++ ヘッダ (現行の `img2cpp.py` と `img2rgb565.py` を統合) |
 | `preview.py` | 実機と同じ変換 (RGB565 化 → LUT → パレット色) で見かけの色を予測した PNG を出力 |
@@ -363,6 +425,10 @@ static const LcdModule TG12864B = {
     転送バッファは 2 面でドライバが持つ)、転送開始 (`startTransfer()`)、転送時間、固有キー・ステータス・ヘルプ。
   - `tg12864b.*`, `tg12864b_write.pio`, `display_tg12864b.cpp`: TG12864B ドライバ (GPIO 初期化, PIO + DMA 転送,
     Busy 待ち / 固定サイクル)。`fillStream()` で pop の出力 (縦パック, LSB が上) を転送ストリームに詰める。
+  - `aqm1248a.*`, `aqm1248a.pio`, `display_aqm1248a.cpp`: AQM1248A (128x48, ST7565R, FSTN ポジ) ドライバ
+    (実験的。4 線 SPI を PIO + DMA で転送。転送ストリームは 1 バイト 1 エントリで RS ビットを含み、コマンドと
+    データを 1 回の DMA で送る)。液晶は内蔵発振 (データシート上 約 128..179 Hz) で走査し、同期できない。
+    電子ボリュームと V0 レギュレータ抵抗比の初期値は、パレットを作ったときの値 (22, 4)。
   - ディスプレイを追加するには、`display_<name>.cpp` (と必要ならドライバ) を書き、`rp2_common.cmake` の
     `PDMFRC_DISPLAYS` とソースの追加、`display.hpp` の画面サイズに登録する。
   - `app.*`: クロック設定 (133MHz 超でコア電圧 1.20V)、フレームループ、USB シリアルの共通操作。
@@ -370,7 +436,8 @@ static const LcdModule TG12864B = {
   - `rp2_common.cmake`: ライブラリの追加 (内部ループを RAM に配置)、ディスプレイの選択と共通のビルド設定。
     各サンプルは使う入力形式だけを `PDMFRC_FORMAT_*` で組み込む。
     パレットや画面サイズに依存するサンプルは `pdmfrc_rp2_require_display()` で対応するディスプレイを限定する
-    (image, gfx3d は TG12864B のみ)。
+    (image, gfx3d は TG12864B と AQM1248A。gfx3d は縦置き 64x128 の画像を中央で切り取り、AQM1248A では
+    左右 8px ずつ削った 48x128 になる。タイトルは表示幅に収まるレイアウトを選ぶ)。
 - フレームループ (core 0):
   1. 目標時刻 (`基準時刻 + n / FPS`) までシリアル入力をポーリングしながら待つ
   2. 用意しておいたバッファの転送を開始 (`display::startTransfer()`。開始の遅れと間隔をジッタ統計に記録)
@@ -384,6 +451,9 @@ static const LcdModule TG12864B = {
   |---|---|
   | `f` / `F` | FPS プリセットを下げる / 上げる |
   | `[` / `]` | FPS -1 / +1 (1..700) |
+  | `{` / `}` | FPS -0.1 / +0.1 (0.1 fps 単位に丸める) |
+  | `a` / `A` | アンチゴーストの強さ -1 / +1 (`CFG_FLAG_ANTIGHOST_*` のある表示器のみ。初期値は `LcdModule::antiGhost`) |
+  | `e` / `E` | アンチゴーストのガンマ -0.05 / +0.05 (0.20..3.00。同上、初期値は `LcdModule::antiGhostGammaQ8`) |
   | `r` / `R` | 初期位相モード切替 (zero → random → bayer) してリセット / 現在のモードでリセット |
   | `s` | ステータス表示 (統計をリセット) |
   | `h` / `?` | ヘルプ |
@@ -394,11 +464,16 @@ static const LcdModule TG12864B = {
   |---|---|---|
   | TG12864B | `b` / `B` | バスサイクルを短く / 長く (300..20000ns) |
   | TG12864B | `w` | Busy 待ち / 固定サイクル切替 |
+  | AQM1248A | `c` / `C` | SCLK を下げる / 上げる (1..20 MHz) |
+  | AQM1248A | `k` / `K` | コントラスト (電子ボリューム) -1 / +1 |
+  | AQM1248A | `x` / `X` | V0 レギュレータ抵抗比 -1 / +1 |
+  | AQM1248A | `u` | 180° 回転 |
 
 - `examples/rp2/<name>/`: `CMakeLists.txt`, `pico_sdk_import.cmake`, `build.sh`, `main.cpp`。
   `build.sh [board] [display]` で `PICO_BOARD` (既定 `pico`、RP2350 は `pico2`) とディスプレイ
   (既定 `tg12864b`) を選ぶ。ビルドディレクトリは `build/<board>-<display>`。RP2350 は Arm コアのみ対象。
-- ハードウェア接続: TG12864B は現行 (GPIO 2..15) と同じ。
+- ハードウェア接続: TG12864B は現行 (GPIO 2..15) と同じ。AQM1248A は RST=GPIO16, CS=GPIO17, SCK=GPIO18,
+  SDI=GPIO19, RS=GPIO20。
 
 ### 6.2 gradient
 
@@ -406,11 +481,15 @@ static const LcdModule TG12864B = {
   (大きな画面でも画像バッファが要らない)。Config は選択したディスプレイの推奨値から入力形式を GRAY8 にし、
   `CFG_FLAG_USE_LUT` を外したもの。全ディスプレイに対応する。
 - 新しいディスプレイの発色を撮影してパレットを作るために使う。
-- 操作は共通操作のみ (現行の PWM / 階調数 / ガンマ / 反転 / パターン切替は削除)。
+- `t` でアンチゴースト調整用パターンに切り替える: 全面を背景の階調値 (初期値 64、`l` / `L` で ±4) で塗り、
+  上辺中央 (幅の 1/4、高さの 1/2) に階調値 255 の四角を置く。四角の下 (列方向) や左右 (行方向) が
+  ほかの部分と同じ濃さに見えるように強さを調整する。
+- 操作は共通操作と `t`, `l` / `L` のみ (現行の PWM / 階調数 / ガンマ / 反転 / パターン切替は削除)。
+  Config のアンチゴーストのフラグは推奨値のまま残す (パターンで強さを調整できるように)。
 
 ### 6.3 image
 
-- `assets/images/tg12864b.png` をビルド時に `tools/img2cpp.py` で RGB565_SWAPPED のヘッダ (`image_data.hpp`) に変換し、
+- `assets/images/<display>.png` (画面サイズの画像) をビルド時に `tools/img2cpp.py` で RGB565_SWAPPED のヘッダ (`image_data.hpp`) に変換し、
   LUT を通して表示する (`examples/core/image/image.cmake`)。
 - タイトル画面は削除。ShapoGFX に依存しない。
 - 操作: `g` で LUT 変換とグレースケール変換 (`PUSH_FLAG_USE_LUT` なし) を切り替えて見比べる。
@@ -453,6 +532,9 @@ static const LcdModule TG12864B = {
 - push: 全入力形式 × 面の並び・ビット順・反転の全組み合わせで、ランダムな矩形・stride・フラグ・fill を
   SPEC の式どおりの参照実装と比較する (256 フレーム分の ON 回数 = `l + (l >> 7)` で階調値を読み戻す)。
 - pop: 4 分割した矩形を任意の順に pop し、参照モデルの ΔΣ と比較する (stride の余白を書き換えないことも確認)。
+- アンチゴースト: 行・列方向 × 面の並び・ビット順・反転の全組み合わせ × 複数の強さ・ガンマで、pop を参照モデルと比較する
+  (フレームの合間に fill と強さ・ガンマの変更を挟み、補正量と曲線の更新も確認する)。Arm DSP 用の `UQSUB8` 経路は、
+  命令をエミュレートしたビルド (`PDMFRC_EMULATE_UQSUB8`) で同じテストを通す。arena サイズと設定の検査も行う。
 - 引数の検査 (`false` になる条件)。
 - LUT: `initLut` と `tools/mklut.py` の結果を比較し、異なるエントリは入力からの距離がほぼ等しいことを確認する。
 

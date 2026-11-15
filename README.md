@@ -108,9 +108,23 @@ Options (cache variables):
 
 ## Supporting another display
 
+Recommended settings are included for `configs::TG12864B` (128x64, KS0108
+compatible) and `configs::AQM1248A` (128x48, ST7565R).
+
 1. Run the gradient example (levels 0..255 from left to right) on the display, at a fixed frame rate.
 2. Photograph the screen and make a 256x1 px palette image of the apparent colors.
-3. Convert the image into a header with `tools/pal2cpp.py`, and define an `LcdModule` like [include/pdmfrc/configs/tg12864b.hpp](include/pdmfrc/configs/tg12864b.hpp).
+3. If the lightness goes back somewhere (unevenness of the photograph), fix it with `tools/palfix.py`. Convert the image into a header with `tools/pal2cpp.py`, and define an `LcdModule` like [include/pdmfrc/configs/tg12864b.hpp](include/pdmfrc/configs/tg12864b.hpp).
+
+### Anti-ghost
+
+Some displays, like the AQM1248A, darken a whole column (or row) that has many
+dark pixels. With `CFG_FLAG_ANTIGHOST_COL` (columns) or
+`CFG_FLAG_ANTIGHOST_ROW` (rows) in `Config::flags`, pop subtracts an amount
+proportional to the sum of the levels of each column (row) from its levels.
+Set the strength and the gamma with `setAntiGhost()` (`LcdModule::antiGhost`
+and `antiGhostGammaQ8` are the recommended values), tuning them with the
+pattern of the gradient example. A gamma below 1 weights the middle levels
+more in the sum.
 
 ## Examples
 
@@ -134,6 +148,7 @@ The tools need Python 3, Pillow and NumPy.
 | Script | Purpose |
 |---|---|
 | `tools/pal2cpp.py` | Palette image → C++ header (RGB888) |
+| `tools/palfix.py` | Makes the lightness of a palette image monotonic, filling the dips with straight lines |
 | `tools/mklut.py` | Palette image → prebuilt LUT header, for `Pdm::setLut()` |
 | `tools/img2cpp.py` | Image → GRAY8 / RGB565 / RGB565_SWAPPED header |
 | `tools/preview.py` | Predicts the apparent colors of an image on the display |

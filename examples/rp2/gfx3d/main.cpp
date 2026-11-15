@@ -23,8 +23,11 @@ using namespace pdmfrc;
 
 const LcdModule& MODULE = display::module();
 Pdm pdm;
-// Planes + RGB565 LUT (R4G5B4)
-alignas(4) uint8_t arena[display::WIDTH * display::HEIGHT * 2 + 8192];
+// Planes + RGB565 LUT (R4G5B4) + anti-ghost curve and amounts (at most one per
+// row or column)
+constexpr size_t ARENA_SIZE =
+    display::WIDTH * display::HEIGHT * 2 + 8192 + 256 + display::WIDTH + display::HEIGHT;
+alignas(4) uint8_t arena[ARENA_SIZE];
 
 // Orientation of the display as installed and the push flags that show the
 // image upright
@@ -229,8 +232,12 @@ int main() {
   app::resetPhase();
 
   // The title goes without the LUT (gray = level), which core 1 builds meanwhile
-  title::draw(backbuf, scene::BB_W * 2);
-  push_centered(title::WIDTH, title::HEIGHT, 1, 0);
+  // As wide as the display shows it in the current rotation (up to title::WIDTH)
+  const bool swap = (ROT_FLAGS[(int)rot] & PUSH_FLAG_SWAP_XY) != 0;
+  const int view_w = swap ? MODULE.config.height : MODULE.config.width;
+  const int title_w = view_w < title::WIDTH ? view_w : title::WIDTH;
+  title::draw(backbuf, scene::BB_W * 2, title_w);
+  push_centered(title_w, title::HEIGHT, 1, 0);
   multicore_launch_core1_with_stack(core1_main, core1_stack, sizeof(core1_stack));
   title_t0 = time_us_64();
   reset_local_stats();

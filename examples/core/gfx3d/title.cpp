@@ -18,37 +18,60 @@ struct Line {
 const g2::GFXfont* const LARGE = &g2::ShapoSansP_s12c09a01w02;
 const g2::GFXfont* const SMALL = &g2::ShapoSansP_s08c07;
 
-const Line LINES[] = {
-    {LARGE, "PDM-FRC"},
-    {SMALL, nullptr},
-    {SMALL, "Monochrome"},
-    {SMALL, "LCD"},
-    {SMALL, nullptr},
-    {SMALL, "3D-GFX"},
-    {SMALL, "Demo"},
+const Line LINES_WIDE[] = {
+    {LARGE, "PDM-FRC"}, {SMALL, nullptr},  {SMALL, "Monochrome"}, {SMALL, "LCD"},
+    {SMALL, nullptr},   {SMALL, "3D-GFX"}, {SMALL, "Demo"},       {nullptr, nullptr},
 };
+
+// For a display narrower than 64 px (48 px wide or more)
+const Line LINES_NARROW[] = {
+    {SMALL, "PDM-FRC"}, {SMALL, nullptr},  {SMALL, "Mono-"}, {SMALL, "chrome"},  {SMALL, "LCD"},
+    {SMALL, nullptr},   {SMALL, "3D-GFX"}, {SMALL, "Demo"},  {nullptr, nullptr},
+};
+
+const Line* const LAYOUTS[] = {LINES_WIDE, LINES_NARROW};
+
+bool fits(g2::Graphics2D& g, const Line* lines, int width) {
+  for (const Line* l = lines; l->font; ++l) {
+    if (!l->text) continue;
+    g.setFont(l->font);
+    if (g.textMetrics(l->text).width > width) return false;
+  }
+  return true;
+}
 
 }  // namespace
 
-void draw(uint16_t* dst, uint32_t stride) {
+void draw(uint16_t* dst, uint32_t stride, int width) {
+  if (width > WIDTH) width = WIDTH;
   const g2::Surface surf =
-      g2::makeSurface(g2::PixelFormat::RGB565_SWAPPED, WIDTH, HEIGHT, dst, stride);
+      g2::makeSurface(g2::PixelFormat::RGB565_SWAPPED, width, HEIGHT, dst, stride);
   g2::Graphics2D g(surf);
   g.clear(g2::Colors::BLACK);
   g.setTextColor(g2::Colors::WHITE);
 
+  // The first layout that fits (the last one otherwise)
+  const int n = (int)(sizeof(LAYOUTS) / sizeof(LAYOUTS[0]));
+  const Line* lines = LAYOUTS[n - 1];
+  for (int i = 0; i < n - 1; ++i) {
+    if (fits(g, LAYOUTS[i], width)) {
+      lines = LAYOUTS[i];
+      break;
+    }
+  }
+
   // Height of the block, to center it vertically
   int total = 0;
-  for (const Line& l : LINES) {
-    g.setFont(l.font);
+  for (const Line* l = lines; l->font; ++l) {
+    g.setFont(l->font);
     total += g.textMetrics("A").lineAdvance;
   }
 
   int y = (HEIGHT - total) / 2;
-  for (const Line& l : LINES) {
-    g.setFont(l.font);
-    const g2::TextMetrics m = g.textMetrics(l.text ? l.text : "A");
-    if (l.text) g.drawString((WIDTH - m.width) / 2, y, l.text);
+  for (const Line* l = lines; l->font; ++l) {
+    g.setFont(l->font);
+    const g2::TextMetrics m = g.textMetrics(l->text ? l->text : "A");
+    if (l->text) g.drawString((width - m.width) / 2, y, l->text);
     y += m.lineAdvance;
   }
 }

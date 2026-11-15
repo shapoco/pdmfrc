@@ -2,7 +2,11 @@
 #   include(<pdmfrc>/examples/core/image/image.cmake)
 #   pdmfrc_example_image(<target>)
 set(PDMFRC_EXAMPLE_IMAGE_DIR ${CMAKE_CURRENT_LIST_DIR})
-set(PDMFRC_EXAMPLE_IMAGE_PNG ${CMAKE_CURRENT_LIST_DIR}/../../../assets/images/tg12864b.png
+# The image of the screen size of the display (assets/images/<display>.png)
+if(NOT DEFINED PDMFRC_DISPLAY)
+    set(PDMFRC_DISPLAY tg12864b)
+endif()
+set(PDMFRC_EXAMPLE_IMAGE_PNG ${CMAKE_CURRENT_LIST_DIR}/../../../assets/images/${PDMFRC_DISPLAY}.png
     CACHE FILEPATH "Image of the image example")
 
 function(pdmfrc_example_image target)

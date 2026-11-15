@@ -16,6 +16,8 @@ constexpr int FPS_PRESETS[] = {5,   10,  15,  20,  25,  30,  40,  50,  60,  70, 
 constexpr uint32_t FPS_MIN_Q8 = 1u << 8;
 constexpr uint32_t FPS_MAX_Q8 = 700u << 8;
 const char* const PHASE_NAMES[] = {"zero", "random", "bayer"};
+constexpr int GAMMA100_MIN = 20;
+constexpr int GAMMA100_MAX = 300;
 
 pdmfrc::Pdm* pdm = nullptr;
 uint32_t fps_q8 = 103u << 8;
@@ -50,12 +52,35 @@ uint32_t clamp_fps(int64_t v) {
   return v < FPS_MIN_Q8 ? FPS_MIN_Q8 : (v > FPS_MAX_Q8 ? FPS_MAX_Q8 : (uint32_t)v);
 }
 
+// Steps by 0.1 fps and rounds to a multiple of 0.1 fps
+uint32_t step_fps_tenth(uint32_t cur_q8, bool up) {
+  const int64_t tenths = ((int64_t)cur_q8 * 10 + 128) / 256 + (up ? 1 : -1);
+  return clamp_fps((tenths * 256 + 5) / 10);
+}
+
+// Anti-ghost gamma: Q8 <-> hundredths, stepped by 0.05 in GAMMA100_MIN..GAMMA100_MAX
+int gamma100(uint16_t q8) { return (q8 * 100 + 128) / 256; }
+
+int step_gamma100(int cur, bool up) {
+  const int v = (cur + (up ? 5 : -5)) / 5 * 5;  // also rounds to a multiple of 0.05
+  return v < GAMMA100_MIN ? GAMMA100_MIN : (v > GAMMA100_MAX ? GAMMA100_MAX : v);
+}
+
+bool anti_ghost_enabled() {
+  return (pdm->getConfig().flags &
+          (pdmfrc::CFG_FLAG_ANTIGHOST_ROW | pdmfrc::CFG_FLAG_ANTIGHOST_COL)) != 0;
+}
+
 void print_help() {
   printf("--- %s ---\n", hooks->title);
   puts(
       " f/F  FPS preset down/up        [/]  FPS -1/+1\n"
+      " {/}  FPS -0.1/+0.1\n"
       " r    phase mode + reset        R    phase reset\n"
       " s    status (and reset stats)  h/?  help");
+  if (anti_ghost_enabled()) {
+    puts(" a/A  anti-ghost strength -1/+1      e/E  anti-ghost gamma -0.05/+0.05");
+  }
   if (display::help()) puts(display::help());
   if (hooks->help) puts(hooks->help);
 }
@@ -76,6 +101,12 @@ bool handle_key(int c) {
     case ']':
       fps_q8 = clamp_fps((int64_t)fps_q8 + 256);
       break;
+    case '{':
+      fps_q8 = step_fps_tenth(fps_q8, false);
+      break;
+    case '}':
+      fps_q8 = step_fps_tenth(fps_q8, true);
+      break;
     case 'r':
       phase = (pdmfrc::Phase)(((int)phase + 1) % 3);
       resetPhase();
@@ -83,6 +114,20 @@ bool handle_key(int c) {
     case 'R':
       resetPhase();
       break;
+    case 'a':
+    case 'A': {
+      if (!anti_ghost_enabled()) return false;
+      const int v = pdm->getAntiGhost() + (c == 'A' ? 1 : -1);
+      pdm->setAntiGhost((uint8_t)(v < 0 ? 0 : (v > 255 ? 255 : v)), pdm->getAntiGhostGamma());
+      break;
+    }
+    case 'e':
+    case 'E': {
+      if (!anti_ghost_enabled()) return false;
+      const int g = step_gamma100(gamma100(pdm->getAntiGhostGamma()), c == 'E');
+      pdm->setAntiGhost(pdm->getAntiGhost(), (uint16_t)((g * 256 + 50) / 100));
+      break;
+    }
     case 's':
       printStatus();
       resetStats();
@@ -115,6 +160,8 @@ void init(pdmfrc::Pdm& p) {
   pdm = &p;
   display::init(p);
   fps_q8 = display::module().fpsQ8;
+  // false without CFG_FLAG_ANTIGHOST_*
+  pdm->setAntiGhost(display::module().antiGhost, display::module().antiGhostGammaQ8);
 }
 
 void resetPhase() { pdm->resetPhase(phase, time_us_32() | 1); }
@@ -132,9 +179,16 @@ void resetStats() {
 
 void printStatus() {
   const uint32_t avg = stat_frames ? (uint32_t)(stat_pop_sum / stat_frames) : 0;
+  const uint32_t fps100 = (uint32_t)(((uint64_t)fps_q8 * 100 + 128) / 256);
   printf("%s: clk=%luMHz fps=%lu.%02lu phase=%s\n", display::name(),
-         (unsigned long)(clock_get_hz(clk_sys) / 1000000), (unsigned long)(fps_q8 >> 8),
-         (unsigned long)((fps_q8 & 255) * 100 / 256), PHASE_NAMES[(int)phase]);
+         (unsigned long)(clock_get_hz(clk_sys) / 1000000), (unsigned long)(fps100 / 100),
+         (unsigned long)(fps100 % 100), PHASE_NAMES[(int)phase]);
+  if (anti_ghost_enabled()) {
+    const int g = gamma100(pdm->getAntiGhostGamma());
+    printf("anti-ghost: %s strength=%u gamma=%d.%02d\n",
+           (pdm->getConfig().flags & pdmfrc::CFG_FLAG_ANTIGHOST_COL) ? "column" : "row",
+           (unsigned)pdm->getAntiGhost(), g / 100, g % 100);
+  }
   display::printStatus();
   printf(
       "frame: pop avg=%luus max=%luus xfer=%luus late=%lu/%lu | start delay max=%luus "
