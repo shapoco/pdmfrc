@@ -1,8 +1,16 @@
 #!/bin/bash
-# Usage: ./build.sh [board] [cmake options...]   board: pico (RP2040, default) / pico2 (RP2350)
+# Usage: ./build.sh [board] [display] [cmake options...]
+#   board:   pico (RP2040, default) / pico2 (RP2350)
+#   display: tg12864b (default)
 set -eu
 cd "$(dirname "$0")"
 board=${1:-pico}
 shift || true
-cmake -S . -B build/$board -G Ninja -DCMAKE_BUILD_TYPE=Release -DPICO_BOARD=$board "$@"
-ninja -C build/$board
+display=tg12864b
+if [ $# -gt 0 ] && [ "${1#-}" = "$1" ]; then
+  display=$1
+  shift
+fi
+cmake -S . -B build/$board-$display -G Ninja -DCMAKE_BUILD_TYPE=Release -DPICO_BOARD=$board \
+  -DPDMFRC_DISPLAY=$display "$@"
+ninja -C build/$board-$display

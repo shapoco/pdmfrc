@@ -8,16 +8,39 @@ set(PDMFRC_EXAMPLES_CORE_DIR ${PDMFRC_ROOT}/examples/core)
 # System clock [kHz]. Above 133000 the core voltage is raised to 1.20 V
 set(SYS_CLOCK_KHZ 125000 CACHE STRING "System clock [kHz]")
 
+# Display (common/display_<name>.cpp). To add a display: add its name here,
+# its driver sources in pdmfrc_rp2_example() and its size in display.hpp
+set(PDMFRC_DISPLAYS tg12864b)
+set(PDMFRC_DISPLAY tg12864b CACHE STRING "Display: ${PDMFRC_DISPLAYS}")
+set_property(CACHE PDMFRC_DISPLAY PROPERTY STRINGS ${PDMFRC_DISPLAYS})
+if(NOT PDMFRC_DISPLAY IN_LIST PDMFRC_DISPLAYS)
+    message(FATAL_ERROR "Unknown PDMFRC_DISPLAY: ${PDMFRC_DISPLAY} (${PDMFRC_DISPLAYS})")
+endif()
+message(STATUS "PDMFRC_DISPLAY: ${PDMFRC_DISPLAY}")
+
+# Stops the configuration unless the display is one of the arguments
+# (the examples that need a palette or a screen size)
+function(pdmfrc_rp2_require_display)
+    if(NOT PDMFRC_DISPLAY IN_LIST ARGN)
+        message(FATAL_ERROR "This example supports PDMFRC_DISPLAY=${ARGN} only (not ${PDMFRC_DISPLAY})")
+    endif()
+endfunction()
+
 # The library, its inner loops run from RAM
 set(PDMFRC_HOT_ATTR "__attribute__((section(\".time_critical.pdmfrc\")))" CACHE STRING "" FORCE)
 add_subdirectory(${PDMFRC_ROOT} pdmfrc)
 
 function(pdmfrc_rp2_example target)
     target_sources(${target} PRIVATE
-        ${PDMFRC_RP2_COMMON_DIR}/tg12864b.cpp
         ${PDMFRC_RP2_COMMON_DIR}/app.cpp
+        ${PDMFRC_RP2_COMMON_DIR}/display_${PDMFRC_DISPLAY}.cpp
     )
-    pico_generate_pio_header(${target} ${PDMFRC_RP2_COMMON_DIR}/tg12864b_write.pio)
+    if(PDMFRC_DISPLAY STREQUAL "tg12864b")
+        target_sources(${target} PRIVATE ${PDMFRC_RP2_COMMON_DIR}/tg12864b.cpp)
+        pico_generate_pio_header(${target} ${PDMFRC_RP2_COMMON_DIR}/tg12864b_write.pio)
+    endif()
+    string(TOUPPER ${PDMFRC_DISPLAY} display_upper)
+    target_compile_definitions(${target} PRIVATE PDMFRC_DISPLAY_${display_upper}=1)
     target_include_directories(${target} PRIVATE ${PDMFRC_RP2_COMMON_DIR})
     target_link_libraries(${target} pdmfrc pico_stdlib hardware_pio hardware_dma hardware_vreg)
     target_compile_definitions(${target} PRIVATE SYS_CLOCK_KHZ=${SYS_CLOCK_KHZ})

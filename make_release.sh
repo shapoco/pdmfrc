@@ -14,11 +14,12 @@ mkdir -p "${dest_dir}"
 function build_rp2 {
   local target=$1
   local board=$2
+  local display=tg12864b
   pushd "examples/rp2/${target}" > /dev/null
-    echo "Building ${target} for ${board}"
-    ./build.sh "${board}" > "build.log" 2>&1
+    echo "Building ${target} for ${board} (${display})"
+    ./build.sh "${board}" "${display}" > "build.log" 2>&1
     mkdir -p "${dest_dir}/rp2/${target}/${board}"
-    cp build/${board}/${target}.uf2 "${dest_dir}/rp2/${target}/${board}/"
+    cp build/${board}-${display}/${target}.uf2 "${dest_dir}/rp2/${target}/${board}/"
   popd > /dev/null
 }
 

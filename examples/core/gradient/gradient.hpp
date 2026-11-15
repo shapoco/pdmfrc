@@ -8,11 +8,14 @@
 
 namespace gradient {
 
-// Config for the gradient: GRAY8 input without a LUT, the levels are the
-// pixel values as they are
+// Config for the gradient: GRAY8 input without a LUT
 pdmfrc::Config makeConfig(const pdmfrc::LcdModule& module);
 
-// Draws a horizontal gradient of levels 0 (left) .. 255 (right) to a GRAY8 buffer
-void generate(uint8_t* buf, int width, int height);
+// Level of column x of a screen of the given width: 0 (left) .. 255 (right)
+uint8_t levelAt(int x, int width);
+
+// Fills the duty plane with a horizontal gradient of levels 0 (left) .. 255
+// (right), column by column (needs no image buffer, for large screens)
+void draw(pdmfrc::Pdm& pdm);
 
 }  // namespace gradient

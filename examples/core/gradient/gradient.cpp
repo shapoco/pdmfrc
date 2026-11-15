@@ -10,11 +10,14 @@ pdmfrc::Config makeConfig(const pdmfrc::LcdModule& module) {
   return cfg;
 }
 
-void generate(uint8_t* buf, int width, int height) {
-  for (int y = 0; y < height; ++y) {
-    for (int x = 0; x < width; ++x) {
-      buf[y * width + x] = (uint8_t)(width > 1 ? (x * 255 + (width - 1) / 2) / (width - 1) : 0);
-    }
+uint8_t levelAt(int x, int width) {
+  return (uint8_t)(width > 1 ? (x * 255 + (width - 1) / 2) / (width - 1) : 0);
+}
+
+void draw(pdmfrc::Pdm& pdm) {
+  const pdmfrc::Config& cfg = pdm.getConfig();
+  for (int x = 0; x < cfg.width; ++x) {
+    pdm.fill(levelAt(x, cfg.width), (pdmfrc::pos_t)x, 0, 1, cfg.height);
   }
 }
 

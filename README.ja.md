@@ -117,7 +117,7 @@ target_link_libraries(your_app pdmfrc)
 | [gfx3d](examples/core/gfx3d) | 波打つ水面に浮かぶ金属キューブのリアルタイム 3D ([ShapoGFX](https://github.com/shapoco/shapo-gfx) が必要) |
 
 - `examples/core/` には、アーキテクチャに依存しない部分を置いています。
-- `examples/rp2/` には、Raspberry Pi Pico (RP2040) / Pico 2 (RP2350) と TG12864B の組み合わせ向けのビルド環境を置いています。詳細は [examples/rp2/README.ja.md](examples/rp2/README.ja.md) を参照してください。
+- `examples/rp2/` には、Raspberry Pi Pico (RP2040) / Pico 2 (RP2350) 向けのビルド環境 (TG12864B) を置いています。詳細は [examples/rp2/README.ja.md](examples/rp2/README.ja.md) を参照してください。
 
 RP2 向けサンプルのビルド済みバイナリ (`.uf2`) は、[Releases](https://github.com/shapoco/pdmfrc/releases) ページからダウンロードできます。接続は [examples/rp2](examples/rp2/README.ja.md) を参照してください。
 

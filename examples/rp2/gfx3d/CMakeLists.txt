@@ -14,6 +14,8 @@ set(PDMFRC_FORMAT_GRAY8 0 CACHE STRING "")
 set(PDMFRC_FORMAT_RGB565 0 CACHE STRING "")
 set(PDMFRC_FORMAT_RGB565_SWAPPED 1 CACHE STRING "")
 include(${CMAKE_CURRENT_SOURCE_DIR}/../common/rp2_common.cmake)
+# Needs the palette, and the screen size of the TG12864B
+pdmfrc_rp2_require_display(tg12864b)
 
 # ShapoGFX (v1.12.0 or later), RGB565_SWAPPED only, settings for a core without an FPU
 if(NOT DEFINED ENV{SHAPOGFX_PATH})

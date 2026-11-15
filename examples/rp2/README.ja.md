@@ -2,17 +2,23 @@
 
 [English](README.md)
 
-Raspberry Pi Pico (RP2040) または Pico 2 (RP2350) で TG12864B (128x64、KS0108 互換) を駆動するサンプルです。アプリケーション側のコードは [`examples/core/`](../core) にあります。
+Raspberry Pi Pico (RP2040) または Pico 2 (RP2350) で液晶を駆動するサンプルです。アプリケーション側のコードは [`examples/core/`](../core) にあります。
 
-| ディレクトリ | 内容 | システムクロック |
+ディスプレイはビルド時に選びます ([ビルド](#ビルド) を参照)。
+
+| ディスプレイ | `PDMFRC_DISPLAY` | 備考 |
 |---|---|---|
-| [gradient](gradient) | 階調値 0..255 のグラデーション (パレット作成用) | 125 MHz |
-| [image](image) | パレット LUT を通した静止画 | 125 MHz |
-| [gfx3d](gfx3d) | 波打つ水面に浮かぶ金属キューブのリアルタイム 3D ([ShapoGFX](https://github.com/shapoco/shapo-gfx) が必要) | 250 MHz |
+| TG12864B (128x64、KS0108 互換) | `tg12864b` (既定) | |
+
+| ディレクトリ | 内容 | システムクロック | ディスプレイ |
+|---|---|---|---|
+| [gradient](gradient) | 階調値 0..255 のグラデーション (パレット作成用) | 125 MHz | すべて |
+| [image](image) | パレット LUT を通した静止画 | 125 MHz | TG12864B |
+| [gfx3d](gfx3d) | 波打つ水面に浮かぶ金属キューブのリアルタイム 3D ([ShapoGFX](https://github.com/shapoco/shapo-gfx) が必要) | 250 MHz | TG12864B |
 
 LCD への書き込みは PIO + DMA で行います。`Pdm::pop()` が出力したビットマップを、毎フレーム一定のレートで送ります。TG12864B では 103 fps です。
 
-## 接続
+## 接続 (TG12864B)
 
 ![](../../image/wiring_rp2_tg12864b.png)
 
@@ -40,7 +46,7 @@ LCD への書き込みは PIO + DMA で行います。`Pdm::pop()` が出力し�
 
 ## ビルド済みバイナリ
 
-ビルド済みバイナリは [Releases](https://github.com/shapoco/pdmfrc/releases) ページからダウンロードできます。zip ファイルの中の `rp2/<board>/<サンプル名>/<サンプル名>.uf2` が書き込むファイルです (`pico`: RP2040、`pico2`: RP2350)。BOOTSEL ボタンを押しながら Pico を接続し、現れたドライブに `.uf2` をコピーしてください。
+ビルド済みバイナリは [Releases](https://github.com/shapoco/pdmfrc/releases) ページからダウンロードできます。zip ファイルの中の `rp2/<サンプル名>/<board>/<サンプル名>.uf2` が書き込むファイルです (`pico`: RP2040、`pico2`: RP2350)。BOOTSEL ボタンを押しながら Pico を接続し、現れたドライブに `.uf2` をコピーしてください。
 
 ## ビルド
 
@@ -54,14 +60,14 @@ examples/rp2/image/build.sh            # Pico (RP2040)
 examples/rp2/image/build.sh pico2      # Pico 2 (RP2350)
 ```
 
-`build.sh` は次のコマンドを実行します。ボード名より後の引数は CMake に渡されます。
+`build.sh [board] [display] [options...]` は次のコマンドを実行します。ディスプレイの既定は `tg12864b` です。それより後の引数は CMake に渡されます。
 
 ```sh
-cmake -S . -B build/<board> -G Ninja -DCMAKE_BUILD_TYPE=Release -DPICO_BOARD=<board> [options...]
-ninja -C build/<board>
+cmake -S . -B build/<board>-<display> -G Ninja -DCMAKE_BUILD_TYPE=Release -DPICO_BOARD=<board> -DPDMFRC_DISPLAY=<display> [options...]
+ninja -C build/<board>-<display>
 ```
 
-各サンプルのディレクトリに `build/<board>/<サンプル名>.uf2` ができます。BOOTSEL ボタンを押しながら Pico を接続し、現れたドライブに `.uf2` をコピーしてください。
+各サンプルのディレクトリに `build/<board>-<display>/<サンプル名>.uf2` ができます。BOOTSEL ボタンを押しながら Pico を接続し、現れたドライブに `.uf2` をコピーしてください。
 
 システムクロックは次のように変更できます。133 MHz を超える場合は、コア電圧を 1.20 V に上げます。
 
@@ -79,10 +85,15 @@ examples/rp2/gfx3d/build.sh pico2 -DSYS_CLOCK_KHZ=200000
 | `[` / `]` | フレームレート -1 / +1 fps |
 | `r` | 位相モードを切り替えて、位相をリセットする |
 | `R` | 位相をリセットする |
-| `b` / `B` | バスサイクルを短く / 長くする |
-| `w` | Busy 待ち / 固定サイクルを切り替える |
 | `s` | ステータスを表示する (統計もリセットする) |
 | `h` / `?` | ヘルプ |
+
+ディスプレイ固有のキー:
+
+| ディスプレイ | キー | 動作 |
+|---|---|---|
+| TG12864B | `b` / `B` | バスサイクルを短く / 長くする |
+| TG12864B | `w` | Busy 待ち / 固定サイクルを切り替える |
 
 サンプル固有のキー:
 

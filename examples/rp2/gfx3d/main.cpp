@@ -6,8 +6,8 @@
 #include <stdio.h>
 
 #include "app.hpp"
+#include "display.hpp"
 #include "hardware/sync.h"
-#include "pdmfrc/configs/tg12864b.hpp"
 #include "pico/multicore.h"
 #include "pico/stdlib.h"
 #include "scene.hpp"
@@ -21,9 +21,10 @@ namespace {
 
 using namespace pdmfrc;
 
-const LcdModule& MODULE = configs::TG12864B;
+const LcdModule& MODULE = display::module();
 Pdm pdm;
-alignas(4) uint8_t arena[128 * 64 * 2 + 8192];  // planes + RGB565 LUT (R4G5B4)
+// Planes + RGB565 LUT (R4G5B4)
+alignas(4) uint8_t arena[display::WIDTH * display::HEIGHT * 2 + 8192];
 
 // Orientation of the display as installed and the push flags that show the
 // image upright
@@ -50,7 +51,7 @@ bool layout_dirty = true;        // rotation / scale changed: clear the margins
 uint16_t backbuf[scene::BB_W * scene::BB_H];
 volatile bool core1_ready = false;   // core 1 -> 0: LUT built, scene initialized
 volatile bool demo_started = false;  // core 0 -> 1: title over, start rendering
-volatile bool sync_frames = true;  // core 1 waits for each push (no tearing)
+volatile bool sync_frames = true;    // core 1 waits for each push (no tearing)
 volatile bool paused = false;
 volatile uint32_t core1_frames = 0;
 volatile uint32_t core1_init_us = 0;
@@ -108,8 +109,8 @@ void push_centered(int w, int h, int scale, uint8_t flags) {
   const Config& cfg = pdm.getConfig();
   flags |= ROT_FLAGS[(int)rot] | (scale == 2 ? PUSH_FLAG_DOUBLE : 0);
   const bool swap = (flags & PUSH_FLAG_SWAP_XY) != 0;
-  const int lw = w / scale, lh = h / scale;                      // logical size of the image
-  const int rw = swap ? lh : lw, rh = swap ? lw : lh;            // as seen on the screen
+  const int lw = w / scale, lh = h / scale;            // logical size of the image
+  const int rw = swap ? lh : lw, rh = swap ? lw : lh;  // as seen on the screen
   const int dw = rw < cfg.width ? rw : cfg.width, dh = rh < cfg.height ? rh : cfg.height;
   const int dx = (cfg.width - dw) / 2, dy = (cfg.height - dh) / 2;
   // The crop is centered, so its position in the image does not depend on the flips
@@ -220,11 +221,11 @@ bool on_key(int c) {
 }  // namespace
 
 int main() {
-  // The PIO clock divider follows the system clock at tg12864b init: set it first
+  // The PIO clock divider follows the system clock at display init: set it first
   app::setClock(SYS_CLOCK_KHZ);
   if (calcRequiredArenaSize(MODULE.config) > sizeof(arena)) panic("arena");
   pdm.init(MODULE.config, arena, sizeof(arena));
-  app::init(pdm, MODULE);
+  app::init(pdm);
   app::resetPhase();
 
   // The title goes without the LUT (gray = level), which core 1 builds meanwhile

@@ -3,8 +3,8 @@
 #include <stdio.h>
 
 #include "app.hpp"
+#include "display.hpp"
 #include "image.hpp"
-#include "pdmfrc/configs/tg12864b.hpp"
 #include "pico/stdlib.h"
 
 #ifndef SYS_CLOCK_KHZ
@@ -13,9 +13,10 @@
 
 namespace {
 
-const pdmfrc::LcdModule& MODULE = pdmfrc::configs::TG12864B;
+const pdmfrc::LcdModule& MODULE = display::module();
 pdmfrc::Pdm pdm;
-alignas(4) uint8_t arena[128 * 64 * 2 + 8192];  // planes + RGB565 LUT (R4G5B4)
+// Planes + RGB565 LUT (R4G5B4)
+alignas(4) uint8_t arena[display::WIDTH * display::HEIGHT * 2 + 8192];
 
 bool use_lut = true;
 uint32_t lut_build_us = 0;
@@ -45,7 +46,7 @@ int main() {
   app::setClock(SYS_CLOCK_KHZ);
   if (pdmfrc::calcRequiredArenaSize(MODULE.config) > sizeof(arena)) panic("arena");
   pdm.init(MODULE.config, arena, sizeof(arena));
-  app::init(pdm, MODULE);
+  app::init(pdm);
 
   const uint32_t t0 = time_us_32();
   pdm.initLut(MODULE.palette);

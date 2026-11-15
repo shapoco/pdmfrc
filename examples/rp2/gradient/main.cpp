@@ -1,8 +1,9 @@
 // Gradient (levels 0..255 from left to right) for making the palette of a display
 // SPDX-License-Identifier: MIT
 #include "app.hpp"
+#include "display.hpp"
 #include "gradient.hpp"
-#include "pdmfrc/configs/tg12864b.hpp"
+#include "pico/stdlib.h"
 
 #ifndef SYS_CLOCK_KHZ
 #define SYS_CLOCK_KHZ 125000
@@ -10,22 +11,19 @@
 
 namespace {
 
-const pdmfrc::LcdModule& MODULE = pdmfrc::configs::TG12864B;
 pdmfrc::Pdm pdm;
-alignas(4) uint8_t arena[128 * 64 * 2];
-uint8_t image[128 * 64];
+alignas(4) uint8_t arena[display::WIDTH * display::HEIGHT * 2];  // planes
 
 }  // namespace
 
 int main() {
   app::setClock(SYS_CLOCK_KHZ);
-  const pdmfrc::Config cfg = gradient::makeConfig(MODULE);
-  static_assert(sizeof(arena) >= 128 * 64 * 2, "arena");
+  const pdmfrc::Config cfg = gradient::makeConfig(display::module());
+  if (pdmfrc::calcRequiredArenaSize(cfg) > sizeof(arena)) panic("arena");
   pdm.init(cfg, arena, sizeof(arena));
-  app::init(pdm, MODULE);
+  app::init(pdm);
 
-  gradient::generate(image, cfg.width, cfg.height);
-  pdm.push(image);
+  gradient::draw(pdm);
   app::resetPhase();
 
   app::Hooks hooks;

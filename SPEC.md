@@ -40,7 +40,7 @@ pdmfrc/
 │   │   ├── image/
 │   │   └── gfx3d/              # ShapoGFX に依存 (このディレクトリのみ)
 │   └── rp2/                    # RP2040 / RP2350 向けビルド環境
-│       ├── common/             # TG12864B ドライバ・HAL
+│       ├── common/             # ディスプレイドライバ・HAL
 │       ├── gradient/
 │       ├── image/
 │       └── gfx3d/
@@ -357,16 +357,24 @@ static const LcdModule TG12864B = {
 
 - `examples/core/<name>/`: アーキテクチャ非依存の部分 (画像の生成、3D シーンの描画など)。HAL には依存しない。
 - `examples/rp2/common/`: RP2040 / RP2350 共通の HAL。
-  - `tg12864b.*`, `tg12864b_write.pio`: TG12864B ドライバ (GPIO 初期化, PIO + DMA 転送, Busy 待ち / 固定サイクル)。
-    `fillStream()` で pop の出力 (縦パック, LSB が上) を転送ストリームに詰める。
+  - `display.hpp`: ディスプレイの抽象。ディスプレイはビルド時に CMake の `PDMFRC_DISPLAY` で 1 つ選び、
+    対応する `display_<name>.cpp` だけをリンクする (マクロ `PDMFRC_DISPLAY_<NAME>` が定義される)。
+    提供するもの: 画面サイズ (`WIDTH`, `HEIGHT`)、推奨設定 (`module()`)、初期化、次フレームの pop (`prepare()`。
+    転送バッファは 2 面でドライバが持つ)、転送開始 (`startTransfer()`)、転送時間、固有キー・ステータス・ヘルプ。
+  - `tg12864b.*`, `tg12864b_write.pio`, `display_tg12864b.cpp`: TG12864B ドライバ (GPIO 初期化, PIO + DMA 転送,
+    Busy 待ち / 固定サイクル)。`fillStream()` で pop の出力 (縦パック, LSB が上) を転送ストリームに詰める。
+  - ディスプレイを追加するには、`display_<name>.cpp` (と必要ならドライバ) を書き、`rp2_common.cmake` の
+    `PDMFRC_DISPLAYS` とソースの追加、`display.hpp` の画面サイズに登録する。
   - `app.*`: クロック設定 (133MHz 超でコア電圧 1.20V)、フレームループ、USB シリアルの共通操作。
     サンプル固有の処理は `app::Hooks` (キー処理、pop 直後の処理、ステータス、ヘルプ) で差し込む。
-  - `rp2_common.cmake`: ライブラリの追加 (内部ループを RAM に配置) と共通のビルド設定。
+  - `rp2_common.cmake`: ライブラリの追加 (内部ループを RAM に配置)、ディスプレイの選択と共通のビルド設定。
     各サンプルは使う入力形式だけを `PDMFRC_FORMAT_*` で組み込む。
+    パレットや画面サイズに依存するサンプルは `pdmfrc_rp2_require_display()` で対応するディスプレイを限定する
+    (image, gfx3d は TG12864B のみ)。
 - フレームループ (core 0):
   1. 目標時刻 (`基準時刻 + n / FPS`) までシリアル入力をポーリングしながら待つ
-  2. 用意しておいたストリームの DMA 転送を開始 (開始の遅れと間隔をジッタ統計に記録)
-  3. もう一方のストリームに次フレームを pop
+  2. 用意しておいたバッファの転送を開始 (`display::startTransfer()`。開始の遅れと間隔をジッタ統計に記録)
+  3. もう一方のバッファに次フレームを pop (`display::prepare()`)
   4. `Hooks::afterPop` (サンプルの push など)。待ち時間の先頭で行い、次の開始時刻を乱さない
 
   目標時刻を 1 フレーム以上過ぎたら遅延として数え、基準時刻を取り直す。FPS の初期値は `LcdModule::fpsQ8`。
@@ -377,19 +385,26 @@ static const LcdModule TG12864B = {
   | `f` / `F` | FPS プリセットを下げる / 上げる |
   | `[` / `]` | FPS -1 / +1 (1..700) |
   | `r` / `R` | 初期位相モード切替 (zero → random → bayer) してリセット / 現在のモードでリセット |
-  | `b` / `B` | バスサイクルを短く / 長く (300..20000ns) |
-  | `w` | Busy 待ち / 固定サイクル切替 |
   | `s` | ステータス表示 (統計をリセット) |
   | `h` / `?` | ヘルプ |
 
+- ディスプレイ固有の操作:
+
+  | ディスプレイ | キー | 機能 |
+  |---|---|---|
+  | TG12864B | `b` / `B` | バスサイクルを短く / 長く (300..20000ns) |
+  | TG12864B | `w` | Busy 待ち / 固定サイクル切替 |
+
 - `examples/rp2/<name>/`: `CMakeLists.txt`, `pico_sdk_import.cmake`, `build.sh`, `main.cpp`。
-  `build.sh` の引数で `PICO_BOARD` (既定 `pico`、RP2350 は `pico2`) を選ぶ。RP2350 は Arm コアのみ対象。
-- ハードウェア接続は現行 (GPIO 2..15) と同じ。
+  `build.sh [board] [display]` で `PICO_BOARD` (既定 `pico`、RP2350 は `pico2`) とディスプレイ
+  (既定 `tg12864b`) を選ぶ。ビルドディレクトリは `build/<board>-<display>`。RP2350 は Arm コアのみ対象。
+- ハードウェア接続: TG12864B は現行 (GPIO 2..15) と同じ。
 
 ### 6.2 gradient
 
-- 左から右へ階調値 0 → 255 に変化するグラデーションを起動時に GRAY8 で生成し、LUT なしで push する
-  (Config は TG12864B の推奨値から入力形式を GRAY8 にし、`CFG_FLAG_USE_LUT` を外したもの)。
+- 左から右へ階調値 0 → 255 に変化するグラデーションを、起動時に列ごとの `fill()` でデューティ面に書く
+  (大きな画面でも画像バッファが要らない)。Config は選択したディスプレイの推奨値から入力形式を GRAY8 にし、
+  `CFG_FLAG_USE_LUT` を外したもの。全ディスプレイに対応する。
 - 新しいディスプレイの発色を撮影してパレットを作るために使う。
 - 操作は共通操作のみ (現行の PWM / 階調数 / ガンマ / 反転 / パターン切替は削除)。
 

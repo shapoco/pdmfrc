@@ -2,20 +2,25 @@
 
 [日本語](README.ja.md)
 
-These examples drive a TG12864B (128x64, KS0108 compatible) from a Raspberry Pi
-Pico (RP2040) or Pico 2 (RP2350). The application-side code is in
-[`examples/core/`](../core).
+These examples drive an LCD from a Raspberry Pi Pico (RP2040) or Pico 2
+(RP2350). The application-side code is in [`examples/core/`](../core).
 
-| Directory | Contents | System clock |
+The display is chosen at build time (see [Build](#build)):
+
+| Display | `PDMFRC_DISPLAY` | Notes |
 |---|---|---|
-| [gradient](gradient) | Gradient of levels 0..255, for making a palette | 125 MHz |
-| [image](image) | A still image through the palette LUT | 125 MHz |
-| [gfx3d](gfx3d) | Real-time 3D: a metal cube over wavy water (requires [ShapoGFX](https://github.com/shapoco/shapo-gfx)) | 250 MHz |
+| TG12864B (128x64, KS0108 compatible) | `tg12864b` (default) | |
+
+| Directory | Contents | System clock | Displays |
+|---|---|---|---|
+| [gradient](gradient) | Gradient of levels 0..255, for making a palette | 125 MHz | all |
+| [image](image) | A still image through the palette LUT | 125 MHz | TG12864B |
+| [gfx3d](gfx3d) | Real-time 3D: a metal cube over wavy water (requires [ShapoGFX](https://github.com/shapoco/shapo-gfx)) | 250 MHz | TG12864B |
 
 The LCD is written by PIO + DMA. Every frame, the bitmap from `Pdm::pop()` is
 sent at a fixed rate (103 fps for the TG12864B).
 
-## Wiring
+## Wiring (TG12864B)
 
 ![](../../image/wiring_rp2_tg12864b.png)
 
@@ -51,7 +56,7 @@ sent at a fixed rate (103 fps for the TG12864B).
 
 Prebuilt binaries can be downloaded from the
 [Releases](https://github.com/shapoco/pdmfrc/releases) page. The zip file
-holds `rp2/<board>/<example>/<example>.uf2` (`pico`: RP2040, `pico2`: RP2350).
+holds `rp2/<example>/<board>/<example>.uf2` (`pico`: RP2040, `pico2`: RP2350).
 Hold BOOTSEL while connecting the Pico, then copy the `.uf2` to the drive that
 appears.
 
@@ -68,15 +73,15 @@ examples/rp2/image/build.sh            # Pico (RP2040)
 examples/rp2/image/build.sh pico2      # Pico 2 (RP2350)
 ```
 
-`build.sh` runs the following. Extra arguments after the board are passed to
-CMake:
+`build.sh [board] [display] [options...]` runs the following. The display is
+`tg12864b` by default. The arguments after them are passed to CMake:
 
 ```sh
-cmake -S . -B build/<board> -G Ninja -DCMAKE_BUILD_TYPE=Release -DPICO_BOARD=<board> [options...]
-ninja -C build/<board>
+cmake -S . -B build/<board>-<display> -G Ninja -DCMAKE_BUILD_TYPE=Release -DPICO_BOARD=<board> -DPDMFRC_DISPLAY=<display> [options...]
+ninja -C build/<board>-<display>
 ```
 
-The output is `build/<board>/<example>.uf2` in each example's directory. Hold
+The output is `build/<board>-<display>/<example>.uf2` in each example's directory. Hold
 BOOTSEL while connecting the Pico, then copy the `.uf2` to the drive that
 appears.
 
@@ -97,10 +102,15 @@ terminal and press `h` for help.
 | `[` / `]` | Frame rate -1 / +1 fps |
 | `r` | Next phase mode, then reset the phase |
 | `R` | Reset the phase |
-| `b` / `B` | Bus cycle shorter / longer |
-| `w` | Busy wait / fixed cycle |
 | `s` | Status (and reset the statistics) |
 | `h` / `?` | Help |
+
+Keys of each display:
+
+| Display | Key | Action |
+|---|---|---|
+| TG12864B | `b` / `B` | Bus cycle shorter / longer |
+| TG12864B | `w` | Busy wait / fixed cycle |
 
 Keys of each example:
 

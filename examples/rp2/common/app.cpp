@@ -3,16 +3,16 @@
 
 #include <stdio.h>
 
+#include "display.hpp"
 #include "hardware/clocks.h"
 #include "hardware/vreg.h"
 #include "pico/stdlib.h"
-#include "tg12864b.hpp"
 
 namespace app {
 namespace {
 
-constexpr int FPS_PRESETS[] = {30,  40,  50,  60,  70,  75,  80,  90,  100, 103,
-                               120, 144, 160, 180, 200, 240, 300, 360, 480, 600};
+constexpr int FPS_PRESETS[] = {5,   10,  15,  20,  25,  30,  40,  50,  60,  70,  75,  80, 90,
+                               100, 103, 120, 144, 160, 180, 200, 240, 300, 360, 480, 600};
 constexpr uint32_t FPS_MIN_Q8 = 1u << 8;
 constexpr uint32_t FPS_MAX_Q8 = 700u << 8;
 const char* const PHASE_NAMES[] = {"zero", "random", "bayer"};
@@ -21,9 +21,6 @@ pdmfrc::Pdm* pdm = nullptr;
 uint32_t fps_q8 = 103u << 8;
 pdmfrc::Phase phase = pdmfrc::Phase::RANDOM;
 const Hooks* hooks = nullptr;
-
-uint32_t streams[2][tg12864b::STREAM_LEN];
-uint8_t pages[tg12864b::WIDTH * tg12864b::PAGES];
 
 uint32_t stat_frames = 0;
 uint64_t stat_pop_sum = 0;
@@ -53,21 +50,13 @@ uint32_t clamp_fps(int64_t v) {
   return v < FPS_MIN_Q8 ? FPS_MIN_Q8 : (v > FPS_MAX_Q8 ? FPS_MAX_Q8 : (uint32_t)v);
 }
 
-uint32_t step_bus_cycle(uint32_t ns, bool up) {
-  if (up)
-    ns += (ns < 2000) ? 100 : 1000;
-  else
-    ns -= (ns <= 2000) ? 100 : 1000;
-  return ns < 300 ? 300 : (ns > 20000 ? 20000 : ns);
-}
-
 void print_help() {
   printf("--- %s ---\n", hooks->title);
   puts(
       " f/F  FPS preset down/up        [/]  FPS -1/+1\n"
       " r    phase mode + reset        R    phase reset\n"
-      " b/B  bus cycle shorter/longer  w    busy wait / fixed cycle\n"
       " s    status (and reset stats)  h/?  help");
+  if (display::help()) puts(display::help());
   if (hooks->help) puts(hooks->help);
 }
 
@@ -94,17 +83,6 @@ bool handle_key(int c) {
     case 'R':
       resetPhase();
       break;
-    case 'b':
-      tg12864b::setBusCycleNs(step_bus_cycle(tg12864b::busCycleNs(), false));
-      break;
-    case 'B':
-      tg12864b::setBusCycleNs(step_bus_cycle(tg12864b::busCycleNs(), true));
-      break;
-    case 'w':
-      tg12864b::setWaitMode(tg12864b::waitMode() == tg12864b::WaitMode::BUSY
-                               ? tg12864b::WaitMode::FIXED
-                               : tg12864b::WaitMode::BUSY);
-      break;
     case 's':
       printStatus();
       resetStats();
@@ -114,17 +92,12 @@ bool handle_key(int c) {
       print_help();
       return false;
     default:
-      if (!hooks->onKey || !hooks->onKey(c)) return false;
+      if (!display::onKey(c) && (!hooks->onKey || !hooks->onKey(c))) return false;
       break;
   }
   printStatus();
   resetStats();
   return fps_q8 != old_fps;
-}
-
-void pop_to(uint32_t* stream) {
-  pdm->pop(pages);
-  tg12864b::fillStream(stream, pages);
 }
 
 }  // namespace
@@ -137,13 +110,11 @@ void setClock(uint32_t khz) {
   set_sys_clock_khz(khz, true);
 }
 
-void init(pdmfrc::Pdm& p, const pdmfrc::LcdModule& module) {
+void init(pdmfrc::Pdm& p) {
   stdio_init_all();
-  tg12864b::init();
-  tg12864b::initStream(streams[0]);
-  tg12864b::initStream(streams[1]);
   pdm = &p;
-  fps_q8 = module.fpsQ8;
+  display::init(p);
+  fps_q8 = display::module().fpsQ8;
 }
 
 void resetPhase() { pdm->resetPhase(phase, time_us_32() | 1); }
@@ -161,15 +132,14 @@ void resetStats() {
 
 void printStatus() {
   const uint32_t avg = stat_frames ? (uint32_t)(stat_pop_sum / stat_frames) : 0;
-  printf("clk=%luMHz fps=%lu.%02lu phase=%s bus=%luns %s\n",
+  printf("%s: clk=%luMHz fps=%lu.%02lu phase=%s\n", display::name(),
          (unsigned long)(clock_get_hz(clk_sys) / 1000000), (unsigned long)(fps_q8 >> 8),
-         (unsigned long)((fps_q8 & 255) * 100 / 256), PHASE_NAMES[(int)phase],
-         (unsigned long)tg12864b::busCycleNs(),
-         tg12864b::waitMode() == tg12864b::WaitMode::BUSY ? "busy-wait" : "fixed-cycle");
+         (unsigned long)((fps_q8 & 255) * 100 / 256), PHASE_NAMES[(int)phase]);
+  display::printStatus();
   printf(
       "frame: pop avg=%luus max=%luus xfer=%luus late=%lu/%lu | start delay max=%luus "
       "interval min=%luus max=%luus (nominal %luus)\n",
-      (unsigned long)avg, (unsigned long)stat_pop_max, (unsigned long)tg12864b::lastTransferUs(),
+      (unsigned long)avg, (unsigned long)stat_pop_max, (unsigned long)display::lastTransferUs(),
       (unsigned long)stat_late, (unsigned long)stat_frames, (unsigned long)stat_delay_max,
       (unsigned long)(stat_interval_min == UINT32_MAX ? 0 : stat_interval_min),
       (unsigned long)stat_interval_max, (unsigned long)frame_time_us(1));
@@ -178,8 +148,7 @@ void printStatus() {
 
 void run(const Hooks& h) {
   hooks = &h;
-  int buf = 0;
-  pop_to(streams[buf]);
+  display::prepare();
   resetStats();
 
   uint64_t base_us = time_us_64();
@@ -201,7 +170,7 @@ void run(const Hooks& h) {
       n = 0;
     }
 
-    tg12864b::startTransfer(streams[buf]);
+    display::startTransfer();
     {
       const uint64_t started = time_us_64();
       // Ahead of the target when a key broke the wait: not counted
@@ -214,11 +183,10 @@ void run(const Hooks& h) {
       }
       last_start_us = started;
     }
-    buf ^= 1;
     ++n;
 
     const uint32_t t0 = time_us_32();
-    pop_to(streams[buf]);
+    display::prepare();
     const uint32_t dt = time_us_32() - t0;
     stat_pop_sum += dt;
     if (dt > stat_pop_max) stat_pop_max = dt;
