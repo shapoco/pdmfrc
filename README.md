@@ -29,11 +29,7 @@ Sending the bitmap to the LCD is up to your application.
 
 ## How it works
 
-```
-image (RGB565) ──LUT──> levels (0..255) ──PDM, every frame──> 1-bit bitmap ──> LCD
-                 ▲
-     palette: level -> apparent color, measured on the display
-```
+![](./image/mechanism.png)
 
 - The *palette* is a 256x1 image: pixel x is the color that a pixel blinking at
   the ON duty x/255 appears to have. It is measured for each display model.
