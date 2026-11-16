@@ -12,7 +12,7 @@ liquid crystal responds slowly, so the eye sees the average. On an STN panel
 this average is not only a shade of gray: the panel's color shifts with the
 duty, so the screen can also show a range of colors.
 
-- 🎥 TG12864B: https://x.com/shapoco/status/2121240088273428980
+- 🎥 TG12864B: https://x.com/shapoco/status/2121829393253507565
 - 🎥 AQM1248A: https://x.com/shapoco/status/2121942341623664857
 
 The library converts GRAY8 / RGB565 images into a level (ON duty) per pixel
