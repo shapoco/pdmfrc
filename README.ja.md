@@ -26,6 +26,8 @@ GRAY8 / RGB565 の画像を、パレット LUT で画素ごとの階調値 (ON �
 
 LCD への転送はアプリ側で行います。
 
+ブログ記事: [モノクロ液晶 TG12864B で色つき階調表示](https://blog.shapoco.net/2026/1116-grayscale-on-tg12864b/)
+
 ## 仕組み
 
 ![](./image/mechanism.png)

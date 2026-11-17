@@ -27,6 +27,8 @@ send to the LCD.
 
 Sending the bitmap to the LCD is up to your application.
 
+See also: [モノクロ液晶 TG12864B で色つき階調表示](https://blog.shapoco.net/2026/1116-grayscale-on-tg12864b/)
+
 ## How it works
 
 ![](./image/mechanism.png)
