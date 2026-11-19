@@ -13,7 +13,7 @@ set(PDMFRC_FORMAT_RGB565 0 CACHE STRING "")
 set(PDMFRC_FORMAT_RGB565_SWAPPED 1 CACHE STRING "")
 include(${CMAKE_CURRENT_SOURCE_DIR}/../common/rp2_common.cmake)
 # Needs the palette and assets/images/<display>.png
-pdmfrc_rp2_require_display(tg12864b aqm1248a)
+pdmfrc_rp2_require_display(tg12864b sg12864aslb aqm1248a)
 include(${PDMFRC_EXAMPLES_CORE_DIR}/image/image.cmake)
 
 add_executable(image main.cpp)

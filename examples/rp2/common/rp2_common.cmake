@@ -8,15 +8,22 @@ set(PDMFRC_EXAMPLES_CORE_DIR ${PDMFRC_ROOT}/examples/core)
 # System clock [kHz]. Above 133000 the core voltage is raised to 1.20 V
 set(SYS_CLOCK_KHZ 125000 CACHE STRING "System clock [kHz]")
 
-# Display (common/display_<name>.cpp). To add a display: add its name here,
-# its driver sources in pdmfrc_rp2_example() and its size in display.hpp
-set(PDMFRC_DISPLAYS tg12864b aqm1248a)
+# Display (common/display_<driver>.cpp). To add a display: add its name here,
+# its driver below (and its sources in pdmfrc_rp2_example()) and its size in
+# display.hpp
+set(PDMFRC_DISPLAYS tg12864b sg12864aslb aqm1248a)
 set(PDMFRC_DISPLAY tg12864b CACHE STRING "Display: ${PDMFRC_DISPLAYS}")
 set_property(CACHE PDMFRC_DISPLAY PROPERTY STRINGS ${PDMFRC_DISPLAYS})
 if(NOT PDMFRC_DISPLAY IN_LIST PDMFRC_DISPLAYS)
     message(FATAL_ERROR "Unknown PDMFRC_DISPLAY: ${PDMFRC_DISPLAY} (${PDMFRC_DISPLAYS})")
 endif()
 message(STATUS "PDMFRC_DISPLAY: ${PDMFRC_DISPLAY}")
+# The SG12864ASLB is KS0108 compatible like the TG12864B and shares its driver
+if(PDMFRC_DISPLAY STREQUAL "sg12864aslb")
+    set(PDMFRC_DISPLAY_DRIVER tg12864b)
+else()
+    set(PDMFRC_DISPLAY_DRIVER ${PDMFRC_DISPLAY})
+endif()
 
 # Stops the configuration unless the display is one of the arguments
 # (the examples that need a palette or a screen size)
@@ -33,12 +40,12 @@ add_subdirectory(${PDMFRC_ROOT} pdmfrc)
 function(pdmfrc_rp2_example target)
     target_sources(${target} PRIVATE
         ${PDMFRC_RP2_COMMON_DIR}/app.cpp
-        ${PDMFRC_RP2_COMMON_DIR}/display_${PDMFRC_DISPLAY}.cpp
+        ${PDMFRC_RP2_COMMON_DIR}/display_${PDMFRC_DISPLAY_DRIVER}.cpp
     )
-    if(PDMFRC_DISPLAY STREQUAL "tg12864b")
+    if(PDMFRC_DISPLAY_DRIVER STREQUAL "tg12864b")
         target_sources(${target} PRIVATE ${PDMFRC_RP2_COMMON_DIR}/tg12864b.cpp)
         pico_generate_pio_header(${target} ${PDMFRC_RP2_COMMON_DIR}/tg12864b_write.pio)
-    elseif(PDMFRC_DISPLAY STREQUAL "aqm1248a")
+    elseif(PDMFRC_DISPLAY_DRIVER STREQUAL "aqm1248a")
         target_sources(${target} PRIVATE ${PDMFRC_RP2_COMMON_DIR}/aqm1248a.cpp)
         pico_generate_pio_header(${target} ${PDMFRC_RP2_COMMON_DIR}/aqm1248a.pio)
     endif()

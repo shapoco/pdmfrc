@@ -1,5 +1,6 @@
 // Display of the RP2040 / RP2350 examples. The display is chosen at build time
-// (CMake PDMFRC_DISPLAY), and exactly one display_<name>.cpp is linked.
+// (CMake PDMFRC_DISPLAY), and exactly one display_<driver>.cpp is linked (the
+// SG12864ASLB shares the driver of the TG12864B).
 // The driver owns two transfer buffers: prepare() pops the next frame into the
 // back buffer while the front one is being transferred
 // SPDX-License-Identifier: MIT
@@ -11,7 +12,7 @@
 
 namespace display {
 
-#if defined(PDMFRC_DISPLAY_TG12864B)
+#if defined(PDMFRC_DISPLAY_TG12864B) || defined(PDMFRC_DISPLAY_SG12864ASLB)
 constexpr int WIDTH = 128;
 constexpr int HEIGHT = 64;
 #elif defined(PDMFRC_DISPLAY_AQM1248A)

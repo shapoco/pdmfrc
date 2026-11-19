@@ -11,8 +11,8 @@
 namespace app {
 namespace {
 
-constexpr int FPS_PRESETS[] = {5,   10,  15,  20,  25,  30,  40,  50,  60,  70,  75,  80, 90,
-                               100, 103, 120, 144, 160, 180, 200, 240, 300, 360, 480, 600};
+constexpr int FPS_PRESETS[] = {5,   10,  15,  20,  25,  30,  40,  50,  60,  70,  73,  75, 80,
+                               90,  100, 103, 120, 144, 160, 180, 200, 240, 300, 360, 480, 600};
 constexpr uint32_t FPS_MIN_Q8 = 1u << 8;
 constexpr uint32_t FPS_MAX_Q8 = 700u << 8;
 const char* const PHASE_NAMES[] = {"zero", "random", "bayer"};

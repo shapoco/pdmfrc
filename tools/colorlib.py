@@ -60,6 +60,23 @@ def srgb_to_oklab(rgb: np.ndarray) -> np.ndarray:
     return np.cbrt(lin @ m1.T) @ m2.T
 
 
+def oklab_to_srgb(lab: np.ndarray) -> np.ndarray:
+    """OKLab -> sRGB (float, (..., 3)), clipped to 0..1."""
+    lab = np.asarray(lab, dtype=np.float64)
+    m2_inv = np.array([
+        [1.0, 0.3963377774, 0.2158037573],
+        [1.0, -0.1055613458, -0.0638541728],
+        [1.0, -0.0894841775, -1.2914855480],
+    ])
+    m1_inv = np.array([
+        [4.0767416621, -3.3077115913, 0.2309699292],
+        [-1.2684380046, 2.6097574011, -0.3413193965],
+        [-0.0041960863, -0.7034186147, 1.7076147010],
+    ])
+    lin = np.clip(((lab @ m2_inv.T) ** 3) @ m1_inv.T, 0.0, 1.0)
+    return np.where(lin <= 0.0031308, lin * 12.92, 1.055 * lin ** (1 / 2.4) - 0.055)
+
+
 def load_palette(path) -> np.ndarray:
     """Loads a palette image (256x1) as uint8 (256, 3). The index is the level."""
     pal = load_rgb(path)

@@ -9,17 +9,18 @@ Raspberry Pi Pico (RP2040) または Pico 2 (RP2350) で液晶を駆動するサ
 | ディスプレイ | `PDMFRC_DISPLAY` | 備考 |
 |---|---|---|
 | TG12864B (128x64、KS0108 互換) | `tg12864b` (既定) | |
+| SG12864ASLB (128x64、KS0108 互換) | `sg12864aslb` | 接続・ドライバは TG12864B と同じ。73 fps |
 | AQM1248A (128x48、ST7565R) | `aqm1248a` | gfx3d は 48x128 に切り取り |
 
 | ディレクトリ | 内容 | システムクロック | ディスプレイ |
 |---|---|---|---|
 | [gradient](gradient) | 階調値 0..255 のグラデーション (パレット作成用) | 125 MHz | すべて |
-| [image](image) | パレット LUT を通した静止画 | 125 MHz | TG12864B、AQM1248A |
-| [gfx3d](gfx3d) | 波打つ水面に浮かぶ金属キューブのリアルタイム 3D ([ShapoGFX](https://github.com/shapoco/shapo-gfx) が必要) | 250 MHz | TG12864B、AQM1248A |
+| [image](image) | パレット LUT を通した静止画 (`assets/images/<display>.png`) | 125 MHz | TG12864B、SG12864ASLB、AQM1248A |
+| [gfx3d](gfx3d) | 波打つ水面に浮かぶ金属キューブのリアルタイム 3D ([ShapoGFX](https://github.com/shapoco/shapo-gfx) が必要) | 250 MHz | TG12864B、SG12864ASLB、AQM1248A |
 
-LCD への書き込みは PIO + DMA で行います。`Pdm::pop()` が出力したビットマップを、毎フレーム一定のレートで送ります。TG12864B では 103 fps です。
+LCD への書き込みは PIO + DMA で行います。`Pdm::pop()` が出力したビットマップを、毎フレーム一定のレートで送ります。TG12864B では 103 fps、SG12864ASLB では 73 fps です。
 
-## 接続 (TG12864B)
+## 接続 (TG12864B、SG12864ASLB)
 
 ![](../../image/wiring_rp2_tg12864b.png)
 
@@ -74,6 +75,7 @@ export SHAPOGFX_PATH=/path/to/shapo-gfx   # gfx3d のみ (v1.12.0 以降)
 
 examples/rp2/image/build.sh            # Pico (RP2040)
 examples/rp2/image/build.sh pico2      # Pico 2 (RP2350)
+examples/rp2/image/build.sh pico sg12864aslb   # SG12864ASLB
 examples/rp2/gradient/build.sh pico aqm1248a   # AQM1248A
 ```
 
@@ -112,8 +114,8 @@ examples/rp2/gfx3d/build.sh pico2 -DSYS_CLOCK_KHZ=200000
 
 | ディスプレイ | キー | 動作 |
 |---|---|---|
-| TG12864B | `b` / `B` | バスサイクルを短く / 長くする |
-| TG12864B | `w` | Busy 待ち / 固定サイクルを切り替える |
+| TG12864B、SG12864ASLB | `b` / `B` | バスサイクルを短く / 長くする |
+| TG12864B、SG12864ASLB | `w` | Busy 待ち / 固定サイクルを切り替える |
 | AQM1248A | `c` / `C` | SCLK を下げる / 上げる (1..20 MHz) |
 | AQM1248A | `k` / `K` | コントラスト (電子ボリューム) -1 / +1 |
 | AQM1248A | `x` / `X` | V0 レギュレータ抵抗比 -1 / +1 |

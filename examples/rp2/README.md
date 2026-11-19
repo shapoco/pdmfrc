@@ -10,18 +10,19 @@ The display is chosen at build time (see [Build](#build)):
 | Display | `PDMFRC_DISPLAY` | Notes |
 |---|---|---|
 | TG12864B (128x64, KS0108 compatible) | `tg12864b` (default) | |
+| SG12864ASLB (128x64, KS0108 compatible) | `sg12864aslb` | Same wiring and driver as the TG12864B, 73 fps |
 | AQM1248A (128x48, ST7565R) | `aqm1248a` | gfx3d is cropped to 48x128 |
 
 | Directory | Contents | System clock | Displays |
 |---|---|---|---|
 | [gradient](gradient) | Gradient of levels 0..255, for making a palette | 125 MHz | all |
-| [image](image) | A still image through the palette LUT | 125 MHz | TG12864B, AQM1248A |
-| [gfx3d](gfx3d) | Real-time 3D: a metal cube over wavy water (requires [ShapoGFX](https://github.com/shapoco/shapo-gfx)) | 250 MHz | TG12864B, AQM1248A |
+| [image](image) | A still image through the palette LUT (`assets/images/<display>.png`) | 125 MHz | TG12864B, SG12864ASLB, AQM1248A |
+| [gfx3d](gfx3d) | Real-time 3D: a metal cube over wavy water (requires [ShapoGFX](https://github.com/shapoco/shapo-gfx)) | 250 MHz | TG12864B, SG12864ASLB, AQM1248A |
 
 The LCD is written by PIO + DMA. Every frame, the bitmap from `Pdm::pop()` is
-sent at a fixed rate (103 fps for the TG12864B).
+sent at a fixed rate (103 fps for the TG12864B, 73 fps for the SG12864ASLB).
 
-## Wiring (TG12864B)
+## Wiring (TG12864B, SG12864ASLB)
 
 ![](../../image/wiring_rp2_tg12864b.png)
 
@@ -96,6 +97,7 @@ export SHAPOGFX_PATH=/path/to/shapo-gfx   # gfx3d only (v1.12.0 or later)
 
 examples/rp2/image/build.sh            # Pico (RP2040)
 examples/rp2/image/build.sh pico2      # Pico 2 (RP2350)
+examples/rp2/image/build.sh pico sg12864aslb   # SG12864ASLB
 examples/rp2/gradient/build.sh pico aqm1248a   # AQM1248A
 ```
 
@@ -138,8 +140,8 @@ Keys of each display:
 
 | Display | Key | Action |
 |---|---|---|
-| TG12864B | `b` / `B` | Bus cycle shorter / longer |
-| TG12864B | `w` | Busy wait / fixed cycle |
+| TG12864B, SG12864ASLB | `b` / `B` | Bus cycle shorter / longer |
+| TG12864B, SG12864ASLB | `w` | Busy wait / fixed cycle |
 | AQM1248A | `c` / `C` | SCLK down / up (1..20 MHz) |
 | AQM1248A | `k` / `K` | Contrast (electronic volume) -1 / +1 |
 | AQM1248A | `x` / `X` | V0 regulator resistor ratio -1 / +1 |

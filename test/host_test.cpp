@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "pdmfrc/configs/aqm1248a.hpp"
+#include "pdmfrc/configs/sg12864aslb.hpp"
 #include "pdmfrc/configs/tg12864b.hpp"
 #include "pdmfrc/pdmfrc.hpp"
 
@@ -448,7 +449,7 @@ void testAntiGhostConfig() {
 }
 
 void testModules() {
-  const LcdModule* modules[] = {&configs::TG12864B, &configs::AQM1248A};
+  const LcdModule* modules[] = {&configs::TG12864B, &configs::SG12864ASLB, &configs::AQM1248A};
   for (const LcdModule* m : modules) {
     std::vector<uint32_t> arena(calcRequiredArenaSize(m->config) / 4 + 1);
     Pdm pdm;

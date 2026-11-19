@@ -26,7 +26,7 @@ pdmfrc/
 │   ├── pdmfrc.hpp               # 公開ヘッダ (これだけインクルードすればよい)
 │   ├── version.hpp
 │   ├── palettes/<display>.hpp   # assets/palettes/<display>.png から生成したパレット
-│   └── configs/<display>.hpp    # ディスプレイの推奨設定 (LcdModule。tg12864b, aqm1248a)
+│   └── configs/<display>.hpp    # ディスプレイの推奨設定 (LcdModule。tg12864b, sg12864aslb, aqm1248a)
 ├── src/                        # ライブラリ実装 (アーキテクチャ非依存)
 ├── cmake/esp_idf.cmake         # ESP-IDF コンポーネントとしての登録
 ├── test/                       # ホスト用テスト (run.sh)
@@ -379,6 +379,27 @@ static const LcdModule TG12864B = {
 
 (KS0108 は縦 8px パック・LSB が上・ビット 1 で点灯。)
 
+### `include/pdmfrc/configs/sg12864aslb.hpp`
+
+SG12864ASLB (128x64, KS0108 互換, STN ポジ)。インタフェースは TG12864B と同じだが、ビット 1 で黒くなる
+(パレットは階調値 0 が白、255 が黒)。
+
+```cpp
+static const LcdModule SG12864ASLB = {
+  {128, 64, PixelFormat::RGB565_SWAPPED, CFG_FLAG_PACK_V8 | CFG_FLAG_LSB1ST | CFG_FLAG_USE_LUT},
+  73 << 8,
+  palettes::SG12864ASLB,
+  0,    // アンチゴーストなし
+  256,
+};
+```
+
+- TG12864B のプログラムで試して目視で最適だったフレームレート 73 fps を推奨値とする。
+- TG12864B のような色の付いた残像は見えず単調な濃淡になるため、パレットはグレースケール。
+- パレットは 73 fps の gradient を撮影した写真を元に作成した (`sg12864aslb_raw.png`)。`palfix.py --normalize` で
+  明度を単調にし、両端が白・黒になるように明度方向にノーマライズしたものが `sg12864aslb.png`。
+  階調値 60 付近まではほぼ白、200 付近からはほぼ黒。
+
 ### `include/pdmfrc/configs/aqm1248a.hpp`
 
 AQM1248A (128x48, ST7565R, FSTN ポジ)。ST7565R は縦 8px パック・LSB が上・ビット 1 で黒。
@@ -407,7 +428,7 @@ static const LcdModule AQM1248A = {
 | スクリプト | 機能 |
 |---|---|
 | `pal2cpp.py` | 256x1 px のパレット画像 → `uint8_t [256][3]` (RGB888) の C++ ヘッダ |
-| `palfix.py` | パレット画像の明度 (OKLab L) を単調にする。明度が戻る箇所を、その手前 (戻った先と同じ値の平坦部の直前) から、その値を超えて進む最初の階調値までの RGB の直線で置き換える。向きは両端から自動判定 (`--direction` で指定可)。出力を省略すると置き換える範囲の表示のみ |
+| `palfix.py` | パレット画像の明度 (OKLab L) を単調にする。明度が戻る箇所を、その手前 (戻った先と同じ値の平坦部の直前) から、その値を超えて進む最初の階調値までの RGB の直線で置き換える。向きは両端から自動判定 (`--direction` で指定可)。`--normalize` で明度 (OKLab L) を線形に伸ばし、最も暗い階調値が黒・最も明るい階調値が白になるようにする (色相・彩度は維持し、sRGB の範囲に切り詰める。写真は純粋な黒・白にならないため、そのままでは LUT がパレットの両端より暗い / 明るい入力色を飽和させてしまう)。出力を省略すると置き換える範囲の表示のみ |
 | `mklut.py` | パレット画像 → 生成済み LUT の C++ ヘッダ (入力形式・ビット数を指定)。`initLut` と同じ算法だが、浮動小数点の差で最近傍がほぼ等距離の色はまれに異なる |
 | `img2cpp.py` | PNG → GRAY8 / RGB565 / RGB565_SWAPPED の C++ ヘッダ (現行の `img2cpp.py` と `img2rgb565.py` を統合) |
 | `preview.py` | 実機と同じ変換 (RGB565 化 → LUT → パレット色) で見かけの色を予測した PNG を出力 |
@@ -420,23 +441,25 @@ static const LcdModule AQM1248A = {
 - `examples/core/<name>/`: アーキテクチャ非依存の部分 (画像の生成、3D シーンの描画など)。HAL には依存しない。
 - `examples/rp2/common/`: RP2040 / RP2350 共通の HAL。
   - `display.hpp`: ディスプレイの抽象。ディスプレイはビルド時に CMake の `PDMFRC_DISPLAY` で 1 つ選び、
-    対応する `display_<name>.cpp` だけをリンクする (マクロ `PDMFRC_DISPLAY_<NAME>` が定義される)。
+    対応する `display_<driver>.cpp` だけをリンクする (マクロ `PDMFRC_DISPLAY_<NAME>` が定義される。
+    SG12864ASLB は TG12864B と同じ KS0108 互換なのでドライバを共用し、`PDMFRC_DISPLAY_SG12864ASLB` で
+    名前と推奨設定だけを切り替える)。
     提供するもの: 画面サイズ (`WIDTH`, `HEIGHT`)、推奨設定 (`module()`)、初期化、次フレームの pop (`prepare()`。
     転送バッファは 2 面でドライバが持つ)、転送開始 (`startTransfer()`)、転送時間、固有キー・ステータス・ヘルプ。
-  - `tg12864b.*`, `tg12864b_write.pio`, `display_tg12864b.cpp`: TG12864B ドライバ (GPIO 初期化, PIO + DMA 転送,
-    Busy 待ち / 固定サイクル)。`fillStream()` で pop の出力 (縦パック, LSB が上) を転送ストリームに詰める。
+  - `tg12864b.*`, `tg12864b_write.pio`, `display_tg12864b.cpp`: TG12864B / SG12864ASLB ドライバ (GPIO 初期化,
+    PIO + DMA 転送, Busy 待ち / 固定サイクル)。`fillStream()` で pop の出力 (縦パック, LSB が上) を転送ストリームに詰める。
   - `aqm1248a.*`, `aqm1248a.pio`, `display_aqm1248a.cpp`: AQM1248A (128x48, ST7565R, FSTN ポジ) ドライバ
     (実験的。4 線 SPI を PIO + DMA で転送。転送ストリームは 1 バイト 1 エントリで RS ビットを含み、コマンドと
     データを 1 回の DMA で送る)。液晶は内蔵発振 (データシート上 約 128..179 Hz) で走査し、同期できない。
     電子ボリュームと V0 レギュレータ抵抗比の初期値は、パレットを作ったときの値 (22, 4)。
   - ディスプレイを追加するには、`display_<name>.cpp` (と必要ならドライバ) を書き、`rp2_common.cmake` の
-    `PDMFRC_DISPLAYS` とソースの追加、`display.hpp` の画面サイズに登録する。
+    `PDMFRC_DISPLAYS` とドライバの対応 (`PDMFRC_DISPLAY_DRIVER`)・ソースの追加、`display.hpp` の画面サイズに登録する。
   - `app.*`: クロック設定 (133MHz 超でコア電圧 1.20V)、フレームループ、USB シリアルの共通操作。
     サンプル固有の処理は `app::Hooks` (キー処理、pop 直後の処理、ステータス、ヘルプ) で差し込む。
   - `rp2_common.cmake`: ライブラリの追加 (内部ループを RAM に配置)、ディスプレイの選択と共通のビルド設定。
     各サンプルは使う入力形式だけを `PDMFRC_FORMAT_*` で組み込む。
     パレットや画面サイズに依存するサンプルは `pdmfrc_rp2_require_display()` で対応するディスプレイを限定する
-    (image, gfx3d は TG12864B と AQM1248A。gfx3d は縦置き 64x128 の画像を中央で切り取り、AQM1248A では
+    (image, gfx3d は TG12864B、SG12864ASLB、AQM1248A。gfx3d は縦置き 64x128 の画像を中央で切り取り、AQM1248A では
     左右 8px ずつ削った 48x128 になる。タイトルは表示幅に収まるレイアウトを選ぶ)。
 - フレームループ (core 0):
   1. 目標時刻 (`基準時刻 + n / FPS`) までシリアル入力をポーリングしながら待つ
@@ -471,7 +494,7 @@ static const LcdModule AQM1248A = {
 
 - `examples/rp2/<name>/`: `CMakeLists.txt`, `pico_sdk_import.cmake`, `build.sh`, `main.cpp`。
   `build.sh [board] [display]` で `PICO_BOARD` (既定 `pico`、RP2350 は `pico2`) とディスプレイ
-  (既定 `tg12864b`) を選ぶ。ビルドディレクトリは `build/<board>-<display>`。RP2350 は Arm コアのみ対象。
+  (既定 `tg12864b`。`sg12864aslb` は TG12864B と同じ接続) を選ぶ。ビルドディレクトリは `build/<board>-<display>`。RP2350 は Arm コアのみ対象。
 - ハードウェア接続: TG12864B は現行 (GPIO 2..15) と同じ。AQM1248A は RST=GPIO16, CS=GPIO17, SCK=GPIO18,
   SDI=GPIO19, RS=GPIO20。
 

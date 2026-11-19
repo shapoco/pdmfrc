@@ -1,10 +1,15 @@
-// Display: TG12864B (128x64, KS0108 compatible), PIO + DMA
+// Display: TG12864B or SG12864ASLB (128x64, KS0108 compatible), PIO + DMA.
+// The two modules differ only in the recommended settings (polarity, frame rate)
 // SPDX-License-Identifier: MIT
 #include <stdio.h>
 
 #include "display.hpp"
-#include "pdmfrc/configs/tg12864b.hpp"
 #include "tg12864b.hpp"
+#if defined(PDMFRC_DISPLAY_SG12864ASLB)
+#include "pdmfrc/configs/sg12864aslb.hpp"
+#else
+#include "pdmfrc/configs/tg12864b.hpp"
+#endif
 
 namespace display {
 namespace {
@@ -26,9 +31,15 @@ uint32_t step_bus_cycle(uint32_t ns, bool up) {
 
 }  // namespace
 
+#if defined(PDMFRC_DISPLAY_SG12864ASLB)
+const char* name() { return "SG12864ASLB"; }
+
+const pdmfrc::LcdModule& module() { return pdmfrc::configs::SG12864ASLB; }
+#else
 const char* name() { return "TG12864B"; }
 
 const pdmfrc::LcdModule& module() { return pdmfrc::configs::TG12864B; }
+#endif
 
 void init(pdmfrc::Pdm& p) {
   pdm = &p;
