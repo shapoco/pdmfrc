@@ -18,6 +18,9 @@ constexpr int HEIGHT = 64;
 #elif defined(PDMFRC_DISPLAY_AQM1248A)
 constexpr int WIDTH = 128;
 constexpr int HEIGHT = 48;
+#elif defined(PDMFRC_DISPLAY_NOKIA5110)
+constexpr int WIDTH = 84;
+constexpr int HEIGHT = 48;
 #else
 #error "No display selected (PDMFRC_DISPLAY_*)"
 #endif

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Usage: ./build.sh [board] [display] [cmake options...]
 #   board:   pico (RP2040, default) / pico2 (RP2350)
-#   display: tg12864b (default) / sg12864aslb / aqm1248a
+#   display: tg12864b (default) / sg12864aslb / aqm1248a / nokia5110
 set -eu
 cd "$(dirname "$0")"
 board=${1:-pico}

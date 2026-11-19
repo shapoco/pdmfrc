@@ -11,9 +11,10 @@ constexpr int WIDTH = 64;
 constexpr int HEIGHT = 128;
 
 // Draws the title (width x HEIGHT, byte-swapped RGB565, stride in bytes):
-// white text centered on black. width (up to WIDTH) is the visible width on
-// a narrower display: a layout whose lines all fit is chosen. Pushed without
-// the LUT, black is level 0 and white is level 255
-void draw(uint16_t* dst, uint32_t stride, int width = WIDTH);
+// white text centered on black. width (up to WIDTH) and height (up to HEIGHT)
+// are the visible size on a smaller display: a layout whose lines all fit in
+// them is chosen (the text is centered, so a centered crop shows it). Pushed
+// without the LUT, black is level 0 and white is level 255
+void draw(uint16_t* dst, uint32_t stride, int width = WIDTH, int height = HEIGHT);
 
 }  // namespace title

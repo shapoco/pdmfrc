@@ -17,6 +17,12 @@ level before it and the first level after it that continues the slope:
 The direction (darker / lighter with the level) is detected from both ends, or
 given by --direction. The lightness is OKLab L.
 
+--smooth N averages each level with its neighbors (a box of N levels, done
+first). A palette image made from a photograph of a display narrower than 256
+px has a periodic pattern: a display column spans 256 / width levels, and the
+dots and the gaps between them alternate (period 3 at 84 px, 2 at 128 px).
+The apparent color of a column is their average: N = that period.
+
 --normalize stretches the lightness so that the darkest level becomes black
 and the lightest white (the hue and the chroma are kept, clipped to the sRGB
 gamut). A photograph never reaches pure black or white; without this, the LUT
@@ -25,6 +31,7 @@ would saturate the input colors darker (lighter) than the ends of the palette.
 Examples:
   tools/palfix.py assets/palettes/aqm1248a_raw.png assets/palettes/aqm1248a.png
   tools/palfix.py assets/palettes/sg12864aslb_raw.png assets/palettes/sg12864aslb.png --normalize
+  tools/palfix.py assets/palettes/nokia5110_raw.png assets/palettes/nokia5110.png --smooth 3 --normalize
 """
 
 import argparse
@@ -78,6 +85,17 @@ def fix(pal: np.ndarray, decreasing: bool) -> tuple:
     return out, ranges
 
 
+def smooth(pal: np.ndarray, n: int) -> np.ndarray:
+    """Moving average of n levels (the ends are extended), float 0..255."""
+    p = np.asarray(pal, dtype=np.float64)
+    if n <= 1:
+        return p.copy()
+    lo, hi = (n - 1) // 2, n // 2
+    padded = np.concatenate([np.repeat(p[:1], lo, 0), p, np.repeat(p[-1:], hi, 0)])
+    cs = np.concatenate([np.zeros((1, 3)), np.cumsum(padded, 0)])
+    return (cs[n:] - cs[:-n]) / n
+
+
 def normalize(pal: np.ndarray) -> np.ndarray:
     """Stretches the lightness (OKLab L) of a palette (float 0..255) to 0..1 linearly."""
     lab = colorlib.srgb_to_oklab(np.asarray(pal, dtype=np.float64) / 255.0)
@@ -98,11 +116,16 @@ def main() -> None:
     ap.add_argument("output", type=pathlib.Path, nargs="?", help="omitted: only report")
     ap.add_argument("--direction", choices=["auto", "darker", "lighter"], default="auto",
                     help="change of the lightness as the level rises (default: from both ends)")
+    ap.add_argument("--smooth", type=int, default=1, metavar="N",
+                    help="average each level over N levels first (default: 1, none)")
     ap.add_argument("--normalize", action="store_true",
                     help="stretch the lightness so that the ends become black and white")
     args = ap.parse_args()
 
     pal = colorlib.load_palette(args.palette)
+    if args.smooth > 1:
+        print(f"smooth: box of {args.smooth} levels")
+    pal = smooth(pal, args.smooth)
     if args.direction == "auto":
         lt = lightness(pal)
         decreasing = lt[-1] <= lt[0]
@@ -112,7 +135,7 @@ def main() -> None:
     fixed, ranges = fix(pal, decreasing)
     print(f"direction: {'darker' if decreasing else 'lighter'} with the level")
     for a, e in ranges:
-        before = " ".join(str(int(v)) for v in pal[a:e + 1, 0])
+        before = " ".join(str(int(round(v))) for v in pal[a:e + 1, 0])
         after = " ".join(str(int(v)) for v in to_uint8(fixed[a:e + 1, 0]))
         print(f"levels {a}..{e} (R): {before}\n{'':>{len(str(a)) + len(str(e)) + 15}}-> {after}")
     if not ranges:

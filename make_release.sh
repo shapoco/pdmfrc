@@ -24,13 +24,21 @@ function build_rp2 {
   popd > /dev/null
 }
 
-for display in tg12864b sg12864aslb aqm1248a; do
-  for target in gradient image gfx3d; do
+# build_display <display> <example>...
+function build_display {
+  local display=$1
+  shift
+  for target in "$@"; do
     for board in pico pico2; do
       build_rp2 "${target}" "${board}" "${display}"
     done
   done
-done
+}
+
+build_display tg12864b gradient image gfx3d
+build_display sg12864aslb gradient image gfx3d
+build_display aqm1248a gradient image gfx3d
+build_display nokia5110 gradient image gfx3d
 
 cp README.md README.ja.md LICENSE "${dest_dir}/"
 # Images referenced by the READMEs

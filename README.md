@@ -14,6 +14,7 @@ duty, so the screen can also show a range of colors.
 
 - 🎥 TG12864B: https://x.com/shapoco/status/2121829393253507565
 - 🎥 SG12864ASLB: https://x.com/shapoco/status/2123339579411599804
+- 🎥 Nokia 5110: https://x.com/shapoco/status/2123399128889819197
 - 🎥 AQM1248A: https://x.com/shapoco/status/2121942341623664857
 
 The library converts GRAY8 / RGB565 images into a level (ON duty) per pixel
@@ -110,11 +111,12 @@ Options (cache variables):
 
 Recommended settings are included for `configs::TG12864B` (128x64, KS0108
 compatible, blue negative), `configs::SG12864ASLB` (128x64, KS0108 compatible,
-positive, grayscale) and `configs::AQM1248A` (128x48, ST7565R).
+positive, grayscale), `configs::AQM1248A` (128x48, ST7565R) and
+`configs::NOKIA5110` (84x48, PCD8544, grayscale).
 
 1. Run the gradient example (levels 0..255 from left to right) on the display, at a fixed frame rate.
 2. Photograph the screen and make a 256x1 px palette image of the apparent colors.
-3. If the lightness goes back somewhere (unevenness of the photograph), fix it with `tools/palfix.py` (`--normalize` stretches the lightness so that the ends of the palette become black and white). Convert the image into a header with `tools/pal2cpp.py`, and define an `LcdModule` like [include/pdmfrc/configs/tg12864b.hpp](include/pdmfrc/configs/tg12864b.hpp).
+3. If the lightness goes back somewhere (unevenness of the photograph), fix it with `tools/palfix.py` (`--smooth` averages out a periodic pattern of the photograph, `--normalize` stretches the lightness so that the ends of the palette become black and white). Convert the image into a header with `tools/pal2cpp.py`, and define an `LcdModule` like [include/pdmfrc/configs/tg12864b.hpp](include/pdmfrc/configs/tg12864b.hpp).
 
 ### Anti-ghost
 

@@ -12,12 +12,13 @@ The display is chosen at build time (see [Build](#build)):
 | TG12864B (128x64, KS0108 compatible) | `tg12864b` (default) | |
 | SG12864ASLB (128x64, KS0108 compatible) | `sg12864aslb` | Same wiring and driver as the TG12864B, 73 fps |
 | AQM1248A (128x48, ST7565R) | `aqm1248a` | gfx3d is cropped to 48x128 |
+| Nokia 5110 (84x48, PCD8544) | `nokia5110` | Same wiring as the AQM1248A, 79 fps. gfx3d is cropped to 48x84 |
 
 | Directory | Contents | System clock | Displays |
 |---|---|---|---|
 | [gradient](gradient) | Gradient of levels 0..255, for making a palette | 125 MHz | all |
-| [image](image) | A still image through the palette LUT (`assets/images/<display>.png`) | 125 MHz | TG12864B, SG12864ASLB, AQM1248A |
-| [gfx3d](gfx3d) | Real-time 3D: a metal cube over wavy water (requires [ShapoGFX](https://github.com/shapoco/shapo-gfx)) | 250 MHz | TG12864B, SG12864ASLB, AQM1248A |
+| [image](image) | A still image through the palette LUT (`assets/images/<display>.png`) | 125 MHz | all |
+| [gfx3d](gfx3d) | Real-time 3D: a metal cube over wavy water (requires [ShapoGFX](https://github.com/shapoco/shapo-gfx)) | 250 MHz | all |
 
 The LCD is written by PIO + DMA. Every frame, the bitmap from `Pdm::pop()` is
 sent at a fixed rate (103 fps for the TG12864B, 73 fps for the SG12864ASLB).
@@ -77,6 +78,25 @@ sent at a fixed rate (103 fps for the TG12864B, 73 fps for the SG12864ASLB).
   looks the same as the rest. The background levels near both ends
   (`l` / `L`) hide the difference: tune the strength at a background of about
   40..64 and the gamma at about 128, and repeat. The palette depends on them.
+
+## Wiring (Nokia 5110)
+
+| Pico | Nokia 5110 | Notes |
+|---|---|---|
+| GPIO16 | RST | Active Low |
+| GPIO17 | CE | Active Low |
+| GPIO18 | CLK | 4 MHz max |
+| GPIO19 | DIN | |
+| GPIO20 | DC | |
+| 3V3 (OUT) | VCC | |
+| GND | GND | |
+| (open) | LIGHT | Backlight, depends on the module (not needed) |
+
+- The LCD scans by its own oscillator and cannot be synchronized: 79 fps
+  looked best. Find the frame rate with the least noise by eye if needed
+  (`[` / `]`, `{` / `}`).
+- The contrast (Vop, `k` / `K`) differs from module to module: the palette was
+  made with Vop 64 and the bias system (`x` / `X`) 1/48.
 
 ## Prebuilt binaries
 
@@ -146,6 +166,9 @@ Keys of each display:
 | AQM1248A | `k` / `K` | Contrast (electronic volume) -1 / +1 |
 | AQM1248A | `x` / `X` | V0 regulator resistor ratio -1 / +1 |
 | AQM1248A | `u` | Rotate 180 degrees |
+| Nokia 5110 | `c` / `C` | SCLK down / up (0.5..4 MHz) |
+| Nokia 5110 | `k` / `K` | Vop (contrast) -1 / +1 |
+| Nokia 5110 | `x` / `X` | Bias system -1 / +1 |
 
 Keys of each example:
 

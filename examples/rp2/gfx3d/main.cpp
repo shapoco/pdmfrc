@@ -232,11 +232,14 @@ int main() {
   app::resetPhase();
 
   // The title goes without the LUT (gray = level), which core 1 builds meanwhile
-  // As wide as the display shows it in the current rotation (up to title::WIDTH)
+  // As large as the display shows it in the current rotation (up to
+  // title::WIDTH x HEIGHT)
   const bool swap = (ROT_FLAGS[(int)rot] & PUSH_FLAG_SWAP_XY) != 0;
   const int view_w = swap ? MODULE.config.height : MODULE.config.width;
+  const int view_h = swap ? MODULE.config.width : MODULE.config.height;
   const int title_w = view_w < title::WIDTH ? view_w : title::WIDTH;
-  title::draw(backbuf, scene::BB_W * 2, title_w);
+  const int title_h = view_h < title::HEIGHT ? view_h : title::HEIGHT;
+  title::draw(backbuf, scene::BB_W * 2, title_w, title_h);
   push_centered(title_w, title::HEIGHT, 1, 0);
   multicore_launch_core1_with_stack(core1_main, core1_stack, sizeof(core1_stack));
   title_t0 = time_us_64();
