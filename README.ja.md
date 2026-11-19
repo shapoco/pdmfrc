@@ -9,6 +9,7 @@ Temporal Dithering Using Pulse Density Modulation
 PDM-FRC は、モノクロ液晶で中間調や擬似カラーを表示するライブラリです。
 
 - 🎥 TG12864B: https://x.com/shapoco/status/2121829393253507565
+- 🎥 SG12864ASLB: https://x.com/shapoco/status/2123339579411599804
 - 🎥 AQM1248A: https://x.com/shapoco/status/2121942341623664857
 
 各画素を 1 次 ΔΣ 変調 (PDM) で高速に点滅させます。液晶の応答は遅いので、目には平均が見えます。

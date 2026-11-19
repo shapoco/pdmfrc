@@ -13,6 +13,7 @@ this average is not only a shade of gray: the panel's color shifts with the
 duty, so the screen can also show a range of colors.
 
 - 🎥 TG12864B: https://x.com/shapoco/status/2121829393253507565
+- 🎥 SG12864ASLB: https://x.com/shapoco/status/2123339579411599804
 - 🎥 AQM1248A: https://x.com/shapoco/status/2121942341623664857
 
 The library converts GRAY8 / RGB565 images into a level (ON duty) per pixel
