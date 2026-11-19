@@ -82,7 +82,7 @@ sent at a fixed rate (103 fps for the TG12864B, 73 fps for the SG12864ASLB).
 
 Prebuilt binaries can be downloaded from the
 [Releases](https://github.com/shapoco/pdmfrc/releases) page. The zip file
-holds `rp2/<example>/<board>/<example>.uf2` (`pico`: RP2040, `pico2`: RP2350).
+holds `rp2/<display>/<example>/<board>/<example>.uf2` (`pico`: RP2040, `pico2`: RP2350).
 Hold BOOTSEL while connecting the Pico, then copy the `.uf2` to the drive that
 appears.
 
